@@ -1,9 +1,19 @@
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:my_web_site/core/ColorManager.dart';
 import 'package:my_web_site/helper/menu_item.dart';
+import 'package:my_web_site/screens/about_us_screen.dart';
+import 'package:my_web_site/screens/dart_programing_course/dart_programing.dart';
+import 'package:my_web_site/screens/order_here_screen.dart';
+import 'package:my_web_site/screens/portfolio_screen.dart';
+import 'package:my_web_site/screens/services_screen.dart';
 import 'package:sizer/sizer.dart';
+
+import 'alert_dialog_data.dart';
+
 
 class SlidingMenu extends StatefulWidget {
   const SlidingMenu({super.key});
@@ -18,8 +28,8 @@ class _SlidingMenuState extends State<SlidingMenu>
   late AnimationController _animationController;
   @override
   void initState() {
-    _animationController =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _animationController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
     super.initState();
   }
 
@@ -27,6 +37,7 @@ class _SlidingMenuState extends State<SlidingMenu>
   Widget build(BuildContext context) {
     double he = MediaQuery.of(context).size.height;
     double wi = MediaQuery.of(context).size.width;
+
     return AnimatedPositioned(
       left: wi < 500
           ? (isSlideOpen ? wi * 0.15 : wi - 35)
@@ -36,7 +47,7 @@ class _SlidingMenuState extends State<SlidingMenu>
         children: [
           ClipRRect(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10,sigmaY: 10),
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
                 height: he,
                 width: wi < 500 ? wi - 100 : wi / 4,
@@ -48,38 +59,88 @@ class _SlidingMenuState extends State<SlidingMenu>
                       SizedBox(
                         height: 4.h,
                       ),
-                       Padding(
-                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                         child: Column(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Column(
                           children: [
                             const CircleAvatar(
                                 radius: 40,
                                 backgroundImage:
                                     AssetImage('assets/images/logo.png')),
-                             Text('4iDeas',style: TextStyle(fontSize: wi<500 ? 13.sp : 8.sp,color: Colors.orange),),
+                            Text(
+                              '4iDeas',
+                              style: TextStyle(
+                                  fontSize: wi < 500 ? 13.sp : 8.sp,
+                                  color: Colors.orange),
+                            ),
                             Text(
                               "Let's Talk! 🇺🇸\n(804)774-0257",
-                              style: TextStyle(fontSize:  wi<500 ? 13.sp : 8.sp, color: ColorManager.white),textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: wi < 500 ? 13.sp : 8.sp,
+                                  color: ColorManager.white),
+                              textAlign: TextAlign.center,
                             ),
                           ],
-                                               ),
-                       ),
+                        ),
+                      ),
                       Divider(
                         height: 20,
                         color: Colors.white.withOpacity(0.4),
                         indent: 32,
                         endIndent: 32,
                       ),
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
                         child: Column(
                           children: [
-                            MenuItem(icon: Icons.design_services, title: 'Services'),
-                            MenuItem(icon: Icons.people, title: 'About Us'),
-                            MenuItem(icon: Icons.note, title: 'Portfolio'),
-                            MenuItem(icon: Icons.contrast, title: 'Order Here'),
                             MenuItem(
-                                icon: Icons.connect_without_contact, title: 'Contact Us'),
+                              icon: Icons.design_services,
+                              title: 'Services',
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>ServicesScreen()));
+                              },
+                            ),
+                            MenuItem(
+                              icon: Icons.people,
+                              title: 'About Us',
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>const AboutUsScreen()));
+                              },
+                            ),
+                            MenuItem(
+                              icon: Icons.note,
+                              title: 'Portfolio',
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>const PortfolioScreen()));
+                              },
+                            ),
+                            MenuItem(
+                              icon: Icons.contrast,
+                              title: 'Order Here',
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>const OrderHereScreen()));
+                              },
+                            ),
+                            MenuItem(
+                              icon: Icons.note,
+                              title: 'Dart programming',
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context)=>const DartPrograming()));
+                              },
+                            ),
+                            MenuItem(
+                              icon: Icons.connect_without_contact,
+                              title: 'Contact Us',
+                              onPressed: () {
+                                // Show a dialog when the button is pressed
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialogData(wi: wi , he: he,);
+                                  },
+                                );
+                              },
+                            ),
                           ],
                         ),
                       )
@@ -91,10 +152,10 @@ class _SlidingMenuState extends State<SlidingMenu>
           ),
           Container(
             color: const Color(0xFF4B556E),
-            width: wi>500 ? wi*0.005 : wi*0.01,
+            width: wi > 500 ? wi * 0.005 : wi * 0.01,
             height: he,
           ),
-          GestureDetector(
+          InkWell(
             onTap: () {
               setState(() {
                 isSlideOpen = !isSlideOpen;
@@ -120,12 +181,14 @@ class _SlidingMenuState extends State<SlidingMenu>
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 }
+
+
 
 class CustomMenuClipper extends CustomClipper<Path> {
   @override
@@ -147,4 +210,5 @@ class CustomMenuClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) {
     return false;
   }
+
 }

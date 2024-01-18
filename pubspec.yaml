@@ -37,8 +37,10 @@ dependencies:
   cupertino_icons: ^1.0.6
   sizer: ^2.0.15
   marquee: ^2.2.3
-  auto_scroll_image: ^0.1.7-dev
+  auto_scroll_image: ^0.2.6-dev
   google_fonts: ^6.1.0
+
+
 
 dev_dependencies:
   flutter_test:

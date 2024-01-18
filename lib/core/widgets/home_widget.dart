@@ -185,6 +185,14 @@ class HomeWidget extends StatelessWidget {
                         width: wi ,
                         height: wi * 0.3,
                         decoration: const BoxDecoration(
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color: Colors.white,
+                          //     spreadRadius: 0,
+                          //     blurRadius: 5,
+                          //     offset: Offset(0,0),
+                          //   )
+                          // ],
                             image: DecorationImage(
                                 image: AssetImage('assets/images/top-web-apps.png'),
                                 fit: BoxFit.contain

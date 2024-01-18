@@ -13,10 +13,10 @@ packages:
     dependency: "direct main"
     description:
       name: auto_scroll_image
-      sha256: "590e616f67ef3ca5619972749cbd7ea65afad3c850a3e13280205aa7993b1d23"
+      sha256: "4a492050e095c59621439d2d233c05468b97fafbd87e2eb54c1ea073904362b0"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.9-dev"
+    version: "0.2.6-dev"
   boolean_selector:
     dependency: transitive
     description:
