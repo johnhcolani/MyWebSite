@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:my_web_site/core/ColorManager.dart';
 import 'package:my_web_site/helper/menu_item.dart';
 import 'package:my_web_site/screens/about_us_screen.dart';
-import 'package:my_web_site/screens/dart_programing_course/dart_programing.dart';
 import 'package:my_web_site/screens/order_here_screen.dart';
 import 'package:my_web_site/screens/portfolio_screen.dart';
 import 'package:my_web_site/screens/services_screen.dart';
@@ -49,11 +48,11 @@ class _SlidingMenuState extends State<SlidingMenu>
     // Calculate drawer width responsively
     double drawerWidth;
     if (isMobile) {
-      drawerWidth = wi * 0.75; // 75% of screen on mobile
+      drawerWidth = wi * 0.65; // 65% of screen on mobile
     } else if (isTablet) {
-      drawerWidth = 320; // Fixed 320px on tablet
+      drawerWidth = 280; // Fixed 280px on tablet
     } else {
-      drawerWidth = 350; // Fixed 350px on desktop (wider than before)
+      drawerWidth = 300; // Fixed 300px on desktop
     }
     
     // Calculate drawer position - now on left side
@@ -62,6 +61,25 @@ class _SlidingMenuState extends State<SlidingMenu>
 
     return Stack(
       children: [
+        // Tap to close overlay - appears when drawer is open
+        if (isSlideOpen)
+          Positioned(
+            left: drawerWidth,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  isSlideOpen = false;
+                  _animationController.reverse();
+                });
+              },
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
         // Drawer content
         AnimatedPositioned(
           left: isSlideOpen ? openPosition : closedPosition,
@@ -250,13 +268,6 @@ class _SlidingMenuState extends State<SlidingMenu>
                               title: 'Order Here',
                               onPressed: () {
                                 Navigator.push(context, MaterialPageRoute(builder: (context)=>const OrderHereScreen()));
-                              },
-                            ),
-                            MenuItem(
-                              icon: Icons.note,
-                              title: 'Dart programming',
-                              onPressed: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context)=>const DartPrograming()));
                               },
                             ),
                             MenuItem(

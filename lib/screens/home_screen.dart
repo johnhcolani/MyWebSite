@@ -47,7 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
             return Stack(
               children: [
                 const AppBackground(),
-                const WebScreen(),
+                Positioned.fill(
+                  child: const WebScreen(),
+                ),
                 // Transparent container at top like appbar
                 Positioned(
                   top: 0,

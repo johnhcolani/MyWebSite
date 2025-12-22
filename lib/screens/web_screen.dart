@@ -27,26 +27,116 @@ class _WebScreenState extends State<WebScreen> {
     // Responsive logo size
     final double logoSize = isMobile ? wi * 0.2 : (isTablet ? wi * 0.15 : wi * 0.12);
     
-    return  Directionality(
+    return Directionality(
       textDirection: TextDirection.ltr,
-      child: Scaffold(
-      backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child:CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child:  Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 140,
-                    ),
-                    Text(
-                      'We design and build',
-                      style: GoogleFonts.albertSans(
-                        fontSize: 18.sp,
-                        //fontWeight: FontWeight.bold,
-                        color: ColorManager.white,
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: wi < 600 ? 140 : (wi < 1024 ? 160 : 180),
+                  ),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: wi * 0.05),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Glow effect behind text
+                          Text(
+                            'We design and build',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.albertSans(
+                              fontSize: 24.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.transparent,
+                              shadows: [
+                                Shadow(
+                                  color: ColorManager.white.withValues(alpha: 0.15),
+                                  blurRadius: 20,
+                                  offset: Offset(0, 0),
+                                ),
+                                Shadow(
+                                  color: ColorManager.blue.withValues(alpha: 0.1),
+                                  blurRadius: 30,
+                                  offset: Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Main glass text with gradient
+                          ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              final bool isMobile = wi < 600;
+                              return LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
+                                  Colors.white.withValues(alpha: isMobile ? 0.4 : 0.25),
+                                  Colors.white.withValues(alpha: isMobile ? 0.5 : 0.35),
+                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
+                                ],
+                                stops: [0.0, 0.3, 0.7, 1.0],
+                              ).createShader(bounds);
+                            },
+                            child: Text(
+                              'We design and build',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.albertSans(
+                                fontSize: 24.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  // Inner white shadow (simulated with negative offset)
+                                  Shadow(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    blurRadius: 3,
+                                    offset: Offset(0, -1),
+                                  ),
+                                  Shadow(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    blurRadius: 2,
+                                    offset: Offset(0, -0.5),
+                                  ),
+                                  // Deep shadow for depth
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.5),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                  // Medium shadow
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 4),
+                                  ),
+                                  // Soft shadow
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 12,
+                                    offset: Offset(0, 6),
+                                  ),
+                                  // Outer glow
+                                  Shadow(
+                                    color: ColorManager.white.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 0),
+                                  ),
+                                  Shadow(
+                                    color: ColorManager.white.withValues(alpha: 0.2),
+                                    blurRadius: 15,
+                                    offset: Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Row(
@@ -157,11 +247,11 @@ class _WebScreenState extends State<WebScreen> {
 
                   ],
                 ),
-              )
+              ),
             ],
-          )
+          ),
         ),
-      ),
-    );
+      );
   }
+
 }
