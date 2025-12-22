@@ -19,6 +19,14 @@ class _WebScreenState extends State<WebScreen> {
   Widget build(BuildContext context) {
     double he=MediaQuery.of(context).size.height;
     double wi=MediaQuery.of(context).size.width;
+    
+    // Responsive breakpoints
+    final bool isMobile = wi < 600;
+    final bool isTablet = wi >= 600 && wi < 1024;
+    
+    // Responsive logo size
+    final double logoSize = isMobile ? wi * 0.2 : (isTablet ? wi * 0.15 : wi * 0.12);
+    
     return  Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
@@ -31,86 +39,7 @@ class _WebScreenState extends State<WebScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(
-                      height: wi * 0.02,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: Container(
-                                  width: wi * 0.08 ,
-                                  height: wi * 0.08,
-                                  decoration: const BoxDecoration(
-                                      image: DecorationImage(
-                                          image: AssetImage('assets/images/logo.png'),
-                                          fit: BoxFit.contain)),
-                                ),
-                              ),
-                              SizedBox(
-                                height: wi * 0.1,
-                              ),
-                              Text(
-                                '4iDeas',
-                                style: TextStyle(
-                                    fontSize: wi> 500 ? 11.sp : 16.sp, color: ColorManager.white),
-                              ),
-                              SizedBox(
-                                height: wi * 0.1,
-                              ),
-
-                            ],
-                          ),
-                          SizedBox(
-                            height: wi * 0.1,
-                          ),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: Colors.blue,
-                                size: wi * 0.03,
-                              ),
-                              SizedBox(
-                                width: wi * 0.02,
-                              ),
-                              RichText(
-                                  text: TextSpan(children: [
-                                    TextSpan(
-                                      text: 'Based in ',
-                                      style: GoogleFonts.albertSans(
-                                        fontSize: 8.sp,
-                                        //fontWeight: FontWeight.bold,
-                                        color: ColorManager.orange,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: 'Richmond, VA ',
-                                      style: GoogleFonts.albertSans(
-                                          fontSize: 8.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: ColorManager.orange),
-                                    ),
-                                  ]))
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-
-
-                    SizedBox(
-                      height: he * 0.08,
+                      height: 140,
                     ),
                     Text(
                       'We design and build',
@@ -120,37 +49,59 @@ class _WebScreenState extends State<WebScreen> {
                         color: ColorManager.white,
                       ),
                     ),
-                    Text(
-                      'Custom iOS apps',
-                      style: GoogleFonts.albertSans(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.blue,
-                      ),
-                    ),
-                    Text(
-                      'Custom Android apps',
-                      style: GoogleFonts.albertSans(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.blue,
-                      ),
-                    ),
-                    Text(
-                      'Custom macOS apps',
-                      style: GoogleFonts.albertSans(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.blue,
-                      ),
-                    ),
-                    Text(
-                      'Custom web apps',
-                      style: GoogleFonts.albertSans(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.blue,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Custom iOS apps',
+                              style: GoogleFonts.albertSans(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                                color: ColorManager.blue,
+                              ),
+                            ),
+                            Text(
+                              'Custom Android apps',
+                              style: GoogleFonts.albertSans(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                                color: ColorManager.blue,
+                              ),
+                            ),
+                            Text(
+                              'Custom macOS apps',
+                              style: GoogleFonts.albertSans(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                                color: ColorManager.blue,
+                              ),
+                            ),
+                            Text(
+                              'Custom web apps',
+                              style: GoogleFonts.albertSans(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                                color: ColorManager.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(width: wi * 0.05),
+                        Container(
+                          width: logoSize,
+                          height: logoSize,
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/image_7.png'),
+                              fit: BoxFit.contain
+                            )
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       'Just with single Codebase',
@@ -163,25 +114,18 @@ class _WebScreenState extends State<WebScreen> {
                     SizedBox(
                       height: he * 0.02,
                     ),
-                    Container(
-                      width: wi * 0.1,
-                      height: wi * 0.1,
-                      decoration: const BoxDecoration(
-
-                          image: DecorationImage(
-                              image: AssetImage('assets/image_7.png'),
-                              fit: BoxFit.contain)),
-                    ),
-                    SizedBox(
-                      height: he * 0.02,
-                    ),
-                    Text(
-                      'that give you and your customers the best experience possible',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.albertSans(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.white,
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? wi * 0.05 : (isTablet ? wi * 0.08 : wi * 0.1),
+                      ),
+                      child: Text(
+                        'that give you and your customers the best experience possible',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.albertSans(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.bold,
+                          color: ColorManager.white,
+                        ),
                       ),
                     ),
 

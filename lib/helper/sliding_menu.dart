@@ -98,19 +98,19 @@ class _SlidingMenuState extends State<SlidingMenu>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          const Color(0xFF4B556E).withValues(alpha: 0.4),
-                          const Color(0xFF2D3748).withValues(alpha: 0.5),
+                          const Color(0xFF4B556E).withValues(alpha: 0.2),
+                          const Color(0xFF2D3748).withValues(alpha: 0.25),
                         ],
                       ),
                       border: Border(
                         right: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withValues(alpha: 0.15),
                           width: 1.5,
                         ),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 20,
                           offset: const Offset(5, 0),
                         ),
