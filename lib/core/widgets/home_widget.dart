@@ -257,7 +257,6 @@ class HomeWidget extends StatelessWidget {
                       height: 0.2.h,
                     ),
 
-
                   ],
                 ),
               )

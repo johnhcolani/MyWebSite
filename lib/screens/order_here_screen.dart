@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:my_web_site/core/ColorManager.dart';
 import 'package:my_web_site/helper/app_background.dart';
+import 'package:sizer/sizer.dart';
 
 class OrderHereScreen extends StatefulWidget {
   const OrderHereScreen({super.key});
@@ -10,628 +14,1214 @@ class OrderHereScreen extends StatefulWidget {
 }
 
 class _OrderHereScreenState extends State<OrderHereScreen> {
-  // Form controllers
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _companyController = TextEditingController();
-  final _appNameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _featuresController = TextEditingController();
-  final _budgetController = TextEditingController();
-  final _timelineController = TextEditingController();
-  final _additionalNotesController = TextEditingController();
-  final _designStyleController = TextEditingController();
-  final _colorSchemeController = TextEditingController();
-  final _designInspirationController = TextEditingController();
-  final _brandGuidelinesController = TextEditingController();
+  bool _isSubmitting = false;
+  
+  // EmailJS Configuration - Replace these with your EmailJS credentials
+  // Get these from https://www.emailjs.com/
+  // After signing up, create a service, template, and get your public key
+  static const String _emailJSServiceID = 'YOUR_SERVICE_ID';
+  static const String _emailJSTemplateID = 'YOUR_TEMPLATE_ID';
+  static const String _emailJSPublicKey = 'YOUR_PUBLIC_KEY';
+  
+  // Controllers
+  final TextEditingController _clientNameController = TextEditingController();
+  final TextEditingController _clientEmailController = TextEditingController();
+  final TextEditingController _clientPhoneController = TextEditingController();
+  final TextEditingController _clientCompanyController = TextEditingController();
+  final TextEditingController _appNameController = TextEditingController();
+  final TextEditingController _appDescriptionController = TextEditingController();
+  final TextEditingController _appFeaturesController = TextEditingController();
+  final TextEditingController _budgetController = TextEditingController();
+  final TextEditingController _timelineController = TextEditingController();
+  final TextEditingController _additionalNotesController = TextEditingController();
+  final TextEditingController _colorSchemeController = TextEditingController();
+  final TextEditingController _designInspirationController = TextEditingController();
+  final TextEditingController _brandGuidelinesController = TextEditingController();
 
-  // Platform selection
-  Map<String, bool> platforms = {
-    'iOS': false,
-    'Android': false,
-    'Web': false,
-    'Windows': false,
-    'macOS': false,
-    'Linux': false,
-  };
+  // Dropdown values
+  String? _selectedAppType;
+  String? _selectedPriority;
+  String? _selectedDesignStyle;
+  String? _selectedDesignComplexity;
 
-  // App type selection
-  String? selectedAppType;
-  final List<String> appTypes = [
-    'Mobile App',
-    'Web Application',
-    'Desktop Application',
-    'Cross-Platform App',
-    'Progressive Web App (PWA)',
-    'Other',
-  ];
-
-  // Priority selection
-  String? selectedPriority;
-  final List<String> priorities = [
-    'Low',
-    'Medium',
-    'High',
-    'Urgent',
-  ];
-
-  // Design complexity selection
-  String? selectedDesignComplexity;
-  final List<String> designComplexities = [
-    'Simple',
-    'Moderate',
-    'Complex',
-    'Very Complex',
-  ];
-
-  // Design style selection
-  String? selectedDesignStyle;
-  final List<String> designStyles = [
-    'Modern & Minimalist',
-    'Bold & Colorful',
-    'Professional & Corporate',
-    'Playful & Creative',
-    'Elegant & Sophisticated',
-    'Custom/Other',
-  ];
+  // Platform checkboxes
+  Set<String> _selectedPlatforms = {};
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _companyController.dispose();
+    _clientNameController.dispose();
+    _clientEmailController.dispose();
+    _clientPhoneController.dispose();
+    _clientCompanyController.dispose();
     _appNameController.dispose();
-    _descriptionController.dispose();
-    _featuresController.dispose();
+    _appDescriptionController.dispose();
+    _appFeaturesController.dispose();
     _budgetController.dispose();
     _timelineController.dispose();
     _additionalNotesController.dispose();
-    _designStyleController.dispose();
     _colorSchemeController.dispose();
     _designInspirationController.dispose();
     _brandGuidelinesController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    double he = MediaQuery.of(context).size.height;
-    double wi = MediaQuery.of(context).size.width;
-    final bool isMobile = wi < 600;
-    final bool isTablet = wi >= 600 && wi < 1024;
-
-    return Scaffold(
-      appBar: AppBar(
-        iconTheme: IconThemeData(
-          color: ColorManager.blue,
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xff020923),
-        title: const Text('Order Here', style: TextStyle(color: Colors.white)),
-      ),
-      body: Stack(
-        children: [
-          const AppBackground(),
-          SafeArea(
-            child: Form(
-              key: _formKey,
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(isMobile ? 16.0 : (isTablet ? 24.0 : 32.0)),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title
-                          Text(
-                            'Order Your App',
-                            style: TextStyle(
-                              fontSize: isMobile ? 28 : (isTablet ? 32 : 36),
-                              fontWeight: FontWeight.bold,
-                              color: ColorManager.white,
-                            ),
-                          ),
-                          SizedBox(height: he * 0.02),
-                          Text(
-                            'Please fill out the form below with all the details about your app project.',
-                            style: TextStyle(
-                              fontSize: isMobile ? 14 : (isTablet ? 16 : 18),
-                              color: ColorManager.white.withValues(alpha: 0.8),
-                            ),
-                          ),
-                          SizedBox(height: he * 0.03),
-
-                          // Client Information Section
-                          _buildSectionTitle('Client Information', isMobile),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _nameController,
-                            label: 'Full Name *',
-                            hint: 'Enter your full name',
-                            isRequired: true,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _emailController,
-                            label: 'Email Address *',
-                            hint: 'your.email@example.com',
-                            keyboardType: TextInputType.emailAddress,
-                            isRequired: true,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _phoneController,
-                            label: 'Phone Number *',
-                            hint: '+1 (555) 123-4567',
-                            keyboardType: TextInputType.phone,
-                            isRequired: true,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _companyController,
-                            label: 'Company/Organization',
-                            hint: 'Your company name (optional)',
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.03),
-
-                          // App Details Section
-                          _buildSectionTitle('App Details', isMobile),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _appNameController,
-                            label: 'App Name *',
-                            hint: 'What would you like to name your app?',
-                            isRequired: true,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildDropdown(
-                            label: 'App Type *',
-                            value: selectedAppType,
-                            items: appTypes,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedAppType = value;
-                              });
-                            },
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _descriptionController,
-                            label: 'App Description *',
-                            hint: 'Describe what your app does and its main purpose...',
-                            maxLines: 5,
-                            isRequired: true,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _featuresController,
-                            label: 'Key Features & Requirements',
-                            hint: 'List the main features and functionalities you need...',
-                            maxLines: 6,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.03),
-
-                          // Platform Selection Section
-                          _buildSectionTitle('Target Platforms *', isMobile),
-                          SizedBox(height: he * 0.015),
-                          Text(
-                            'Select all platforms where you want your app to be available:',
-                            style: TextStyle(
-                              fontSize: isMobile ? 13 : 15,
-                              color: ColorManager.white.withValues(alpha: 0.8),
-                            ),
-                          ),
-                          SizedBox(height: he * 0.01),
-                          _buildPlatformCheckboxes(isMobile),
-                          SizedBox(height: he * 0.03),
-
-                          // Project Details Section
-                          _buildSectionTitle('Project Details', isMobile),
-                          SizedBox(height: he * 0.015),
-                          _buildDropdown(
-                            label: 'Priority Level',
-                            value: selectedPriority,
-                            items: priorities,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedPriority = value;
-                              });
-                            },
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _budgetController,
-                            label: 'Budget Range',
-                            hint: r'e.g., $5,000 - $10,000 or Flexible',
-                            keyboardType: TextInputType.text,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _timelineController,
-                            label: 'Desired Timeline',
-                            hint: 'e.g., 3 months, ASAP, Flexible',
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _additionalNotesController,
-                            label: 'Additional Notes',
-                            hint: 'Any other information you think we should know...',
-                            maxLines: 4,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.03),
-
-                          // Design Requirements Section
-                          _buildSectionTitle('Design Requirements', isMobile),
-                          SizedBox(height: he * 0.015),
-                          _buildDropdown(
-                            label: 'Design Style Preference',
-                            value: selectedDesignStyle,
-                            items: designStyles,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedDesignStyle = value;
-                              });
-                            },
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _colorSchemeController,
-                            label: 'Color Scheme / Brand Colors',
-                            hint: 'e.g., Primary: #FF5733, Secondary: #33C3F0, or describe your color preferences',
-                            maxLines: 2,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildDropdown(
-                            label: 'Design Complexity Level',
-                            value: selectedDesignComplexity,
-                            items: designComplexities,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedDesignComplexity = value;
-                              });
-                            },
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _designInspirationController,
-                            label: 'Design Inspiration / References',
-                            hint: 'Share links to apps or websites you like, or describe the look and feel you want...',
-                            maxLines: 4,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.015),
-                          _buildTextField(
-                            controller: _brandGuidelinesController,
-                            label: 'Brand Guidelines / Assets',
-                            hint: 'Do you have brand guidelines, logo files, or other design assets? Describe or mention if you will provide them.',
-                            maxLines: 3,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: he * 0.04),
-
-                          // Submit Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _submitForm,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ColorManager.orange,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: isMobile ? 16 : 18,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Text(
-                                'Submit Order',
-                                style: TextStyle(
-                                  fontSize: isMobile ? 16 : 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: he * 0.02),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title, bool isMobile) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: isMobile ? 20 : 24,
-        fontWeight: FontWeight.bold,
-        color: ColorManager.orange,
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    bool isRequired = false,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    required bool isMobile,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isMobile ? 14 : 16,
-            fontWeight: FontWeight.w600,
-            color: ColorManager.white,
-          ),
-        ),
-        SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          style: TextStyle(color: ColorManager.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-            filled: true,
-            fillColor: const Color(0xFF0F1F35).withValues(alpha: 0.55),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: ColorManager.blue.withValues(alpha: 0.3)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: ColorManager.blue.withValues(alpha: 0.3)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: ColorManager.orange, width: 2),
-            ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: maxLines > 1 ? 12 : 16),
-          ),
-          validator: isRequired
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'This field is required';
-                  }
-                  if (label.contains('Email') && !value.contains('@')) {
-                    return 'Please enter a valid email address';
-                  }
-                  return null;
-                }
-              : null,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-    required bool isMobile,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isMobile ? 14 : 16,
-            fontWeight: FontWeight.w600,
-            color: ColorManager.white,
-          ),
-        ),
-        SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: ColorManager.blue.withValues(alpha: 0.3)),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: DropdownButtonFormField<String>(
-            value: value,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 16),
-            ),
-            dropdownColor: const Color(0xff1A202C),
-            style: TextStyle(color: ColorManager.white),
-            icon: Icon(Icons.arrow_drop_down, color: ColorManager.orange),
-            hint: Text(
-              'Select ${label.replaceAll('*', '')}',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-            ),
-            items: items.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(item),
-              );
-            }).toList(),
-            onChanged: onChanged,
-            validator: label.contains('*')
-                ? (val) {
-                    if (val == null || val.isEmpty) {
-                      return 'Please select an option';
-                    }
-                    return null;
-                  }
-                : null,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlatformCheckboxes(bool isMobile) {
-    return Wrap(
-      spacing: isMobile ? 12 : 16,
-      runSpacing: 12,
-      children: platforms.entries.map((entry) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: entry.value
-                  ? ColorManager.orange
-                  : ColorManager.blue.withValues(alpha: 0.3),
-              width: entry.value ? 2 : 1,
-            ),
-          ),
-          child: CheckboxListTile(
-            title: Text(
-              entry.key,
-              style: TextStyle(
-                fontSize: isMobile ? 14 : 16,
-                color: ColorManager.white,
-              ),
-            ),
-            value: entry.value,
-            activeColor: ColorManager.orange,
-            checkColor: Colors.white,
-            onChanged: (bool? value) {
-              setState(() {
-                platforms[entry.key] = value ?? false;
-              });
-            },
-            contentPadding: EdgeInsets.symmetric(horizontal: 8),
-            dense: true,
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Check if at least one platform is selected
-      bool hasPlatformSelected = platforms.values.any((selected) => selected);
-      if (!hasPlatformSelected) {
+      if (_selectedPlatforms.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Please select at least one platform'),
+          const SnackBar(
+            content: Text('Please select at least one target platform'),
             backgroundColor: Colors.red,
           ),
         );
         return;
       }
 
-      // Collect form data
-      String selectedPlatforms = platforms.entries
-          .where((entry) => entry.value)
-          .map((entry) => entry.key)
-          .join(', ');
+      setState(() {
+        _isSubmitting = true;
+      });
 
-      // Show confirmation dialog
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            backgroundColor: const Color(0xff1A202C),
-            title: Text(
-              'Order Submitted!',
-              style: TextStyle(color: ColorManager.orange),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Thank you for your order!',
-                  style: TextStyle(
-                    color: ColorManager.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'App Name: ${_appNameController.text}',
-                  style: TextStyle(color: ColorManager.white),
-                ),
-                Text(
-                  'Platforms: $selectedPlatforms',
-                  style: TextStyle(color: ColorManager.white),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'We will contact you soon at ${_emailController.text}',
-                  style: TextStyle(color: ColorManager.white),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Reset form
-                  _formKey.currentState!.reset();
-                  _nameController.clear();
-                  _emailController.clear();
-                  _phoneController.clear();
-                  _companyController.clear();
-                  _appNameController.clear();
-                  _descriptionController.clear();
-                  _featuresController.clear();
-                  _budgetController.clear();
-                  _timelineController.clear();
-                  _additionalNotesController.clear();
-                  _designStyleController.clear();
-                  _colorSchemeController.clear();
-                  _designInspirationController.clear();
-                  _brandGuidelinesController.clear();
-                  setState(() {
-                    platforms.updateAll((key, value) => false);
-                    selectedAppType = null;
-                    selectedPriority = null;
-                    selectedDesignStyle = null;
-                    selectedDesignComplexity = null;
-                  });
-                },
-                child: Text(
-                  'OK',
-                  style: TextStyle(color: ColorManager.orange),
+      try {
+        // Prepare email content
+        final emailBody = _buildEmailBody();
+        
+        // Send email using EmailJS
+        final response = await http.post(
+          Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'service_id': _emailJSServiceID,
+            'template_id': _emailJSTemplateID,
+            'user_id': _emailJSPublicKey,
+            'template_params': {
+              'from_name': _clientNameController.text,
+              'from_email': _clientEmailController.text,
+              'to_email': 'johnacolani@gmail.com',
+              'subject': 'New Order Request: ${_appNameController.text}',
+              'message': emailBody,
+            },
+          }),
+        );
+
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        if (response.statusCode == 200) {
+          // Show success dialog
+          _showSuccessDialog();
+        } else {
+          // Show error message
+          _showErrorDialog('Failed to send email. Please try again later.');
+        }
+      } catch (e) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        _showErrorDialog('Error: ${e.toString()}');
+      }
+    }
+  }
+
+  String _buildEmailBody() {
+    final buffer = StringBuffer();
+    buffer.writeln('=== NEW ORDER REQUEST ===\n');
+    
+    buffer.writeln('CLIENT INFORMATION:');
+    buffer.writeln('Name: ${_clientNameController.text}');
+    buffer.writeln('Email: ${_clientEmailController.text}');
+    buffer.writeln('Phone: ${_clientPhoneController.text.isNotEmpty ? _clientPhoneController.text : "Not provided"}');
+    buffer.writeln('Company: ${_clientCompanyController.text.isNotEmpty ? _clientCompanyController.text : "Not provided"}');
+    buffer.writeln('');
+    
+    buffer.writeln('APP DETAILS:');
+    buffer.writeln('App Name: ${_appNameController.text}');
+    buffer.writeln('App Type: ${_selectedAppType ?? "Not specified"}');
+    buffer.writeln('Description: ${_appDescriptionController.text}');
+    buffer.writeln('Features: ${_appFeaturesController.text.isNotEmpty ? _appFeaturesController.text : "Not specified"}');
+    buffer.writeln('');
+    
+    buffer.writeln('TARGET PLATFORMS:');
+    buffer.writeln(_selectedPlatforms.join(', '));
+    buffer.writeln('');
+    
+    buffer.writeln('PROJECT DETAILS:');
+    buffer.writeln('Priority: ${_selectedPriority ?? "Not specified"}');
+    buffer.writeln('Budget: ${_budgetController.text.isNotEmpty ? _budgetController.text : "Not specified"}');
+    buffer.writeln('Timeline: ${_timelineController.text.isNotEmpty ? _timelineController.text : "Not specified"}');
+    buffer.writeln('Additional Notes: ${_additionalNotesController.text.isNotEmpty ? _additionalNotesController.text : "None"}');
+    buffer.writeln('');
+    
+    buffer.writeln('DESIGN REQUIREMENTS:');
+    buffer.writeln('Style Preference: ${_selectedDesignStyle ?? "Not specified"}');
+    buffer.writeln('Complexity Level: ${_selectedDesignComplexity ?? "Not specified"}');
+    buffer.writeln('Color Scheme: ${_colorSchemeController.text.isNotEmpty ? _colorSchemeController.text : "Not specified"}');
+    buffer.writeln('Design Inspiration: ${_designInspirationController.text.isNotEmpty ? _designInspirationController.text : "Not specified"}');
+    buffer.writeln('Brand Guidelines: ${_brandGuidelinesController.text.isNotEmpty ? _brandGuidelinesController.text : "Not specified"}');
+    
+    return buffer.toString();
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xff020923),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 24.sp),
+              SizedBox(width: 2.w),
+              Text(
+                'Order Submitted!',
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
-          );
-        },
-      );
-    }
+          ),
+          content: Text(
+            'Thank you for your order. We have received your request and will contact you soon.',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Reset form
+                _formKey.currentState!.reset();
+                _selectedPlatforms.clear();
+                _selectedAppType = null;
+                _selectedPriority = null;
+                _selectedDesignStyle = null;
+                _selectedDesignComplexity = null;
+              },
+              child: Text(
+                'OK',
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.blue,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xff020923),
+          title: Row(
+            children: [
+              Icon(Icons.error, color: Colors.red, size: 24.sp),
+              SizedBox(width: 2.w),
+              Text(
+                'Error',
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'OK',
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.blue,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    bool isRequired = true,
+    int maxLines = 1,
+    bool isMobile = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isMobile ? 0.4.h : 0.5.h),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1F35).withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          style: GoogleFonts.albertSans(
+            color: ColorManager.white,
+            fontSize: isMobile ? 10.sp : 5.sp,
+          ),
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            labelStyle: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 9.sp : 4.5.sp,
+            ),
+            hintStyle: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.5),
+              fontSize: isMobile ? 9.sp : 4.5.sp,
+            ),
+            fillColor: const Color(0xFF0F1F35).withValues(alpha: 0.55),
+            filled: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: ColorManager.blue.withValues(alpha: 0.3),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: ColorManager.blue.withValues(alpha: 0.3),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: ColorManager.blue,
+                width: 2,
+              ),
+            ),
+          ),
+          validator: isRequired
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter $label';
+                  }
+                  return null;
+                }
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required List<String> items,
+    required String? value,
+    required Function(String?) onChanged,
+    bool isRequired = true,
+    bool isMobile = false,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isMobile ? 0.4.h : 0.5.h),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0F1F35).withValues(alpha: 0.6),
+              const Color(0xFF1A2F4A).withValues(alpha: 0.5),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: ColorManager.blue.withValues(alpha: 0.2),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: ColorManager.blue.withValues(alpha: 0.1),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 9.sp : 4.5.sp,
+            ),
+            fillColor: const Color(0xFF0F1F35).withValues(alpha: 0.55),
+            filled: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: ColorManager.blue.withValues(alpha: 0.3),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: ColorManager.blue.withValues(alpha: 0.3),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: ColorManager.blue,
+                width: 2,
+              ),
+            ),
+          ),
+          dropdownColor: const Color(0xFF0F1F35),
+          style: GoogleFonts.albertSans(
+            color: ColorManager.white,
+            fontSize: isMobile ? 10.sp : 5.sp,
+          ),
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                item,
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.white,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          validator: isRequired
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select $label';
+                  }
+                  return null;
+                }
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlatformCheckboxes() {
+    final platforms = [
+      {'name': 'iOS', 'icon': Icons.phone_iphone},
+      {'name': 'Android', 'icon': Icons.android},
+      {'name': 'Web', 'icon': Icons.language},
+      {'name': 'Windows', 'icon': Icons.desktop_windows},
+      {'name': 'macOS', 'icon': Icons.laptop_mac},
+      {'name': 'Linux', 'icon': Icons.computer},
+    ];
+
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF0F1F35).withValues(alpha: 0.7),
+            const Color(0xFF1A2F4A).withValues(alpha: 0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ColorManager.blue.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ColorManager.blue.withValues(alpha: 0.15),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Target Platforms *',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white,
+              fontSize: isMobile ? 9.sp : 4.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: platforms.map((platform) {
+              final isSelected = _selectedPlatforms.contains(platform['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      platform['icon'] as IconData,
+                      size: isMobile ? 14.sp : 9.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      platform['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 9.sp : 4.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedPlatforms.add(platform['name'] as String);
+                    } else {
+                      _selectedPlatforms.remove(platform['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.blue.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.blue : ColorManager.blue.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 1.w : 0.5.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+    bool isMobile = false,
+    IconData? icon,
+  }) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isMobile ? 1.h : 1.2.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (icon != null) ...[
+                Container(
+                  padding: EdgeInsets.all(isMobile ? 0.6.h : 0.5.h),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        ColorManager.orange.withValues(alpha: 0.3),
+                        ColorManager.orange.withValues(alpha: 0.2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: ColorManager.orange,
+                    size: isMobile ? 14.sp : 12.sp,
+                  ),
+                ),
+                SizedBox(width: 1.w),
+              ],
+              Text(
+                title,
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.orange,
+                  fontSize: isMobile ? 14.sp : 7.sp,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: ColorManager.orange.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.8.h),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFancyDesignSection(bool isMobile) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2.h),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0F1F35).withValues(alpha: 0.7),
+              const Color(0xFF1A2F4A).withValues(alpha: 0.7),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ColorManager.orange.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: ColorManager.orange.withValues(alpha: 0.1),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(isMobile ? 1.5.h : 1.5.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isMobile ? 0.8.h : 1.h),
+                  decoration: BoxDecoration(
+                    color: ColorManager.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.palette,
+                    color: ColorManager.orange,
+                    size: isMobile ? 16.sp : 14.sp,
+                  ),
+                ),
+                SizedBox(width: 1.5.w),
+                Text(
+                  'Design Requirements',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange,
+                    fontSize: isMobile ? 14.sp : 6.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isMobile ? 1.2.h : 1.h),
+            
+            // Design Style Preference with icons
+            Container(
+              padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F1F35).withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: ColorManager.blue.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.style,
+                        color: ColorManager.blue,
+                        size: isMobile ? 14.sp : 8.sp,
+                      ),
+                      SizedBox(width: 0.8.w),
+                      Text(
+                        'Design Style Preference',
+                        style: GoogleFonts.albertSans(
+                          color: ColorManager.white,
+                          fontSize: isMobile ? 10.sp : 5.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isMobile ? 0.8.h : 0.6.h),
+                  _buildDropdown(
+                    label: '',
+                    items: [
+                      'Modern & Minimalist',
+                      'Bold & Colorful',
+                      'Professional & Corporate',
+                      'Playful & Creative',
+                      'Custom/Other',
+                    ],
+                    value: _selectedDesignStyle,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedDesignStyle = value;
+                      });
+                    },
+                    isRequired: false,
+                    isMobile: isMobile,
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: isMobile ? 1.h : 0.8.h),
+            
+            // Design Complexity Level
+            Container(
+              padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF0F1F35).withValues(alpha: 0.5),
+                    const Color(0xFF1A2F4A).withValues(alpha: 0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.layers,
+                        color: ColorManager.blue,
+                        size: isMobile ? 14.sp : 8.sp,
+                      ),
+                      SizedBox(width: 0.8.w),
+                      Text(
+                        'Design Complexity Level',
+                        style: GoogleFonts.albertSans(
+                          color: ColorManager.white,
+                          fontSize: isMobile ? 10.sp : 5.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isMobile ? 0.8.h : 0.6.h),
+                  _buildDropdown(
+                    label: '',
+                    items: [
+                      'Simple',
+                      'Moderate',
+                      'Complex',
+                      'Very Complex',
+                    ],
+                    value: _selectedDesignComplexity,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedDesignComplexity = value;
+                      });
+                    },
+                    isRequired: false,
+                    isMobile: isMobile,
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: isMobile ? 1.h : 0.8.h),
+            
+            // Color Scheme
+            Container(
+              padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF0F1F35).withValues(alpha: 0.5),
+                    const Color(0xFF1A2F4A).withValues(alpha: 0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.color_lens,
+                        color: ColorManager.blue,
+                        size: isMobile ? 14.sp : 8.sp,
+                      ),
+                      SizedBox(width: 0.8.w),
+                      Text(
+                        'Color Scheme / Brand Colors',
+                        style: GoogleFonts.albertSans(
+                          color: ColorManager.white,
+                          fontSize: isMobile ? 10.sp : 5.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isMobile ? 0.8.h : 0.6.h),
+                  _buildTextField(
+                    label: '',
+                    hint: 'Describe your preferred color palette or brand colors',
+                    controller: _colorSchemeController,
+                    maxLines: 2,
+                    isRequired: false,
+                    isMobile: isMobile,
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: isMobile ? 1.h : 0.8.h),
+            
+            // Design Inspiration
+            Container(
+              padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF0F1F35).withValues(alpha: 0.5),
+                    const Color(0xFF1A2F4A).withValues(alpha: 0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb,
+                        color: ColorManager.blue,
+                        size: isMobile ? 14.sp : 8.sp,
+                      ),
+                      SizedBox(width: 0.8.w),
+                      Text(
+                        'Design Inspiration / References',
+                        style: GoogleFonts.albertSans(
+                          color: ColorManager.white,
+                          fontSize: isMobile ? 10.sp : 5.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isMobile ? 0.8.h : 0.6.h),
+                  _buildTextField(
+                    label: '',
+                    hint: 'Links to apps or websites you like, or describe your vision',
+                    controller: _designInspirationController,
+                    maxLines: 3,
+                    isRequired: false,
+                    isMobile: isMobile,
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: isMobile ? 1.h : 0.8.h),
+            
+            // Brand Guidelines
+            Container(
+              padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF0F1F35).withValues(alpha: 0.5),
+                    const Color(0xFF1A2F4A).withValues(alpha: 0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.folder_special,
+                        color: ColorManager.blue,
+                        size: isMobile ? 14.sp : 8.sp,
+                      ),
+                      SizedBox(width: 0.8.w),
+                      Text(
+                        'Brand Guidelines / Assets',
+                        style: GoogleFonts.albertSans(
+                          color: ColorManager.white,
+                          fontSize: isMobile ? 10.sp : 5.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isMobile ? 0.8.h : 0.6.h),
+                  _buildTextField(
+                    label: '',
+                    hint: 'Do you have a logo, brand guidelines, or design assets?',
+                    controller: _brandGuidelinesController,
+                    maxLines: 3,
+                    isRequired: false,
+                    isMobile: isMobile,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double wi = MediaQuery.of(context).size.width;
+    final bool isMobile = wi < 600;
+
+    return Scaffold(
+      appBar: AppBar(
+        iconTheme: const IconThemeData(
+          color: ColorManager.blue,
+        ),
+        centerTitle: true,
+        backgroundColor: const Color(0xff020923),
+        title: Text(
+          'Order Here',
+          style: GoogleFonts.albertSans(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          const AppBackground(),
+          Form(
+            key: _formKey,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 4.w : 8.w,
+                vertical: isMobile ? 1.h : 1.2.h,
+              ),
+              child: CustomScrollView(
+                slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Client Information
+                      _buildSection(
+                        title: 'Client Information',
+                        children: [
+                          _buildTextField(
+                            label: 'Full Name *',
+                            hint: 'Enter your full name',
+                            controller: _clientNameController,
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'Email *',
+                            hint: 'your.email@example.com',
+                            controller: _clientEmailController,
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'Phone Number',
+                            hint: '+1 (555) 123-4567',
+                            controller: _clientPhoneController,
+                            isRequired: false,
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'Company/Organization',
+                            hint: 'Your company name (optional)',
+                            controller: _clientCompanyController,
+                            isRequired: false,
+                            isMobile: isMobile,
+                          ),
+                        ],
+                        isMobile: isMobile,
+                      ),
+
+                      // App Details
+                      _buildSection(
+                        title: 'App Details',
+                        icon: Icons.apps,
+                        children: [
+                          _buildTextField(
+                            label: 'App Name *',
+                            hint: 'Enter your app name',
+                            controller: _appNameController,
+                            isMobile: isMobile,
+                          ),
+                          _buildDropdown(
+                            label: 'App Type *',
+                            items: [
+                              'Mobile App',
+                              'Web App',
+                              'Desktop App',
+                              'Cross-Platform App',
+                              'Progressive Web App (PWA)',
+                              'Other',
+                            ],
+                            value: _selectedAppType,
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedAppType = value;
+                              });
+                            },
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'App Description *',
+                            hint: 'Describe what your app does',
+                            controller: _appDescriptionController,
+                            maxLines: 4,
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'Key Features',
+                            hint: 'List main features (e.g., User authentication, Payment processing, etc.)',
+                            controller: _appFeaturesController,
+                            maxLines: 4,
+                            isRequired: false,
+                            isMobile: isMobile,
+                          ),
+                        ],
+                        isMobile: isMobile,
+                      ),
+
+                      // Target Platforms
+                      _buildSection(
+                        title: 'Target Platforms',
+                        icon: Icons.devices,
+                        children: [
+                          _buildPlatformCheckboxes(),
+                        ],
+                        isMobile: isMobile,
+                      ),
+
+                      // Project Details
+                      _buildSection(
+                        title: 'Project Details',
+                        icon: Icons.assignment,
+                        children: [
+                          _buildDropdown(
+                            label: 'Project Priority *',
+                            items: [
+                              'Low',
+                              'Medium',
+                              'High',
+                              'Urgent',
+                            ],
+                            value: _selectedPriority,
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedPriority = value;
+                              });
+                            },
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'Budget Range',
+                            hint: r'e.g., $5,000 - $10,000 or Flexible',
+                            controller: _budgetController,
+                            isRequired: false,
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'Timeline',
+                            hint: 'e.g., 3 months, ASAP, Flexible',
+                            controller: _timelineController,
+                            isRequired: false,
+                            isMobile: isMobile,
+                          ),
+                          _buildTextField(
+                            label: 'Additional Notes',
+                            hint: 'Any other information you\'d like to share',
+                            controller: _additionalNotesController,
+                            maxLines: 4,
+                            isRequired: false,
+                            isMobile: isMobile,
+                          ),
+                        ],
+                        isMobile: isMobile,
+                      ),
+
+                      // Design Requirements
+                      _buildFancyDesignSection(isMobile),
+
+                      SizedBox(height: 3.h),
+
+                      // Submit Button
+                      Center(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                ColorManager.blue,
+                                ColorManager.blue.withValues(alpha: 0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: ColorManager.blue.withValues(alpha: 0.4),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting ? null : _submitForm,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isMobile ? 8.w : 6.w,
+                                vertical: isMobile ? 2.h : 1.5.h,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              disabledBackgroundColor: Colors.transparent,
+                            ),
+                            child: _isSubmitting
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: isMobile ? 16.sp : 14.sp,
+                                        height: isMobile ? 16.sp : 14.sp,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      ),
+                                      SizedBox(width: 2.w),
+                                      Text(
+                                        'Submitting...',
+                                        style: GoogleFonts.albertSans(
+                                          color: Colors.white,
+                                          fontSize: isMobile ? 14.sp : 7.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.send,
+                                        color: Colors.white,
+                                        size: isMobile ? 16.sp : 14.sp,
+                                      ),
+                                      SizedBox(width: 1.w),
+                                      Text(
+                                        'Submit Order',
+                                        style: GoogleFonts.albertSans(
+                                          color: Colors.white,
+                                          fontSize: isMobile ? 14.sp : 7.sp,
+                                          fontWeight: FontWeight.bold,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withValues(alpha: 0.3),
+                                              blurRadius: 4,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: 3.h),
+                    ],
+                  ),
+                ),
+              ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
