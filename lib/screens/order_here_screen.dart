@@ -17,9 +17,12 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
   
-  // EmailJS Configuration - Replace these with your EmailJS credentials
+  // Formspree Configuration - Simple form submission service
+  // Your form endpoint from https://formspree.io/
+  static const String _formspreeEndpoint = 'https://formspree.io/f/maqwlqlq';
+  
+  // Alternative: EmailJS Configuration (if you prefer EmailJS)
   // Get these from https://www.emailjs.com/
-  // After signing up, create a service, template, and get your public key
   static const String _emailJSServiceID = 'YOUR_SERVICE_ID';
   static const String _emailJSTemplateID = 'YOUR_TEMPLATE_ID';
   static const String _emailJSPublicKey = 'YOUR_PUBLIC_KEY';
@@ -83,45 +86,66 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
       });
 
       try {
-        // Prepare email content
-        final emailBody = _buildEmailBody();
+        // Formspree is configured
+
+        // Prepare form data
+        final formData = {
+          'name': _clientNameController.text,
+          'email': _clientEmailController.text,
+          'phone': _clientPhoneController.text.isNotEmpty ? _clientPhoneController.text : 'Not provided',
+          'company': _clientCompanyController.text.isNotEmpty ? _clientCompanyController.text : 'Not provided',
+          'app_name': _appNameController.text,
+          'app_type': _selectedAppType ?? 'Not specified',
+          'app_description': _appDescriptionController.text,
+          'app_features': _appFeaturesController.text.isNotEmpty ? _appFeaturesController.text : 'Not specified',
+          'platforms': _selectedPlatforms.join(', '),
+          'priority': _selectedPriority ?? 'Not specified',
+          'budget': _budgetController.text.isNotEmpty ? _budgetController.text : 'Not specified',
+          'timeline': _timelineController.text.isNotEmpty ? _timelineController.text : 'Not specified',
+          'additional_notes': _additionalNotesController.text.isNotEmpty ? _additionalNotesController.text : 'None',
+          'design_style': _selectedDesignStyle ?? 'Not specified',
+          'design_complexity': _selectedDesignComplexity ?? 'Not specified',
+          'color_scheme': _colorSchemeController.text.isNotEmpty ? _colorSchemeController.text : 'Not specified',
+          'design_inspiration': _designInspirationController.text.isNotEmpty ? _designInspirationController.text : 'Not specified',
+          'brand_guidelines': _brandGuidelinesController.text.isNotEmpty ? _brandGuidelinesController.text : 'Not specified',
+          '_subject': 'New Order Request: ${_appNameController.text}',
+          '_replyto': _clientEmailController.text,
+        };
         
-        // Send email using EmailJS
+        // Send form using Formspree
         final response = await http.post(
-          Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
+          Uri.parse(_formspreeEndpoint),
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
-          body: jsonEncode({
-            'service_id': _emailJSServiceID,
-            'template_id': _emailJSTemplateID,
-            'user_id': _emailJSPublicKey,
-            'template_params': {
-              'from_name': _clientNameController.text,
-              'from_email': _clientEmailController.text,
-              'to_email': 'johnacolani@gmail.com',
-              'subject': 'New Order Request: ${_appNameController.text}',
-              'message': emailBody,
-            },
-          }),
+          body: jsonEncode(formData),
         );
 
         setState(() {
           _isSubmitting = false;
         });
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
           // Show success dialog
-          _showSuccessDialog();
+          _showSuccessDialog(isEmailSent: true);
         } else {
-          // Show error message
-          _showErrorDialog('Failed to send email. Please try again later.');
+          // Show error message with response details
+          _showErrorDialog(
+            'Failed to send form.\n\n'
+            'Status Code: ${response.statusCode}\n'
+            'Response: ${response.body}\n\n'
+            'Please check your Formspree endpoint.',
+          );
         }
       } catch (e) {
         setState(() {
           _isSubmitting = false;
         });
-        _showErrorDialog('Error: ${e.toString()}');
+        _showErrorDialog(
+          'Error sending form: ${e.toString()}\n\n'
+          'Please check your Formspree configuration and internet connection.',
+        );
       }
     }
   }
@@ -165,7 +189,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
     return buffer.toString();
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog({bool isEmailSent = true}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -185,7 +209,9 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
             ],
           ),
           content: Text(
-            'Thank you for your order. We have received your request and will contact you soon.',
+            isEmailSent
+                ? 'Thank you for your order. We have received your request and will contact you soon.'
+                : 'Thank you for your order. Your form has been submitted successfully.\n\nNote: EmailJS is not configured yet, so the email was not sent. Please configure EmailJS to receive email notifications.',
             style: GoogleFonts.albertSans(
               color: ColorManager.white,
             ),
