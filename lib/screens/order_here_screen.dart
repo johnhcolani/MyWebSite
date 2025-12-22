@@ -47,9 +47,26 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
   String? _selectedPriority;
   String? _selectedDesignStyle;
   String? _selectedDesignComplexity;
+  String _selectedCountryCode = '+1'; // Default to US
 
   // Platform checkboxes
   Set<String> _selectedPlatforms = {};
+  
+  // Feature checkboxes
+  Set<String> _selectedFeatures = {};
+  
+  // Budget range checkboxes
+  Set<String> _selectedBudgetRanges = {};
+  
+  // Timeline checkboxes
+  Set<String> _selectedTimelines = {};
+  
+  // Design section checkboxes
+  Set<String> _selectedDesignStyles = {};
+  Set<String> _selectedDesignComplexities = {};
+  Set<String> _selectedColorSchemes = {};
+  Set<String> _selectedDesignInspirations = {};
+  Set<String> _selectedBrandElements = {};
 
   @override
   void dispose() {
@@ -92,22 +109,40 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
         final formData = {
           'name': _clientNameController.text,
           'email': _clientEmailController.text,
-          'phone': _clientPhoneController.text.isNotEmpty ? _clientPhoneController.text : 'Not provided',
+          'phone': _clientPhoneController.text.isNotEmpty 
+              ? '$_selectedCountryCode ${_clientPhoneController.text}'
+              : 'Not provided',
           'company': _clientCompanyController.text.isNotEmpty ? _clientCompanyController.text : 'Not provided',
           'app_name': _appNameController.text,
           'app_type': _selectedAppType ?? 'Not specified',
           'app_description': _appDescriptionController.text,
-          'app_features': _appFeaturesController.text.isNotEmpty ? _appFeaturesController.text : 'Not specified',
+          'app_features': _selectedFeatures.isNotEmpty 
+              ? '${_selectedFeatures.join(', ')}${_appFeaturesController.text.isNotEmpty ? ' | Additional: ${_appFeaturesController.text}' : ''}'
+              : (_appFeaturesController.text.isNotEmpty ? _appFeaturesController.text : 'Not specified'),
           'platforms': _selectedPlatforms.join(', '),
           'priority': _selectedPriority ?? 'Not specified',
-          'budget': _budgetController.text.isNotEmpty ? _budgetController.text : 'Not specified',
-          'timeline': _timelineController.text.isNotEmpty ? _timelineController.text : 'Not specified',
+          'budget': _selectedBudgetRanges.isNotEmpty 
+              ? _selectedBudgetRanges.join(', ')
+              : (_budgetController.text.isNotEmpty ? _budgetController.text : 'Not specified'),
+          'timeline': _selectedTimelines.isNotEmpty 
+              ? _selectedTimelines.join(', ')
+              : (_timelineController.text.isNotEmpty ? _timelineController.text : 'Not specified'),
           'additional_notes': _additionalNotesController.text.isNotEmpty ? _additionalNotesController.text : 'None',
-          'design_style': _selectedDesignStyle ?? 'Not specified',
-          'design_complexity': _selectedDesignComplexity ?? 'Not specified',
-          'color_scheme': _colorSchemeController.text.isNotEmpty ? _colorSchemeController.text : 'Not specified',
-          'design_inspiration': _designInspirationController.text.isNotEmpty ? _designInspirationController.text : 'Not specified',
-          'brand_guidelines': _brandGuidelinesController.text.isNotEmpty ? _brandGuidelinesController.text : 'Not specified',
+          'design_style': _selectedDesignStyles.isNotEmpty 
+              ? '${_selectedDesignStyles.join(', ')}${_selectedDesignStyle != null ? ' | Additional: $_selectedDesignStyle' : ''}'
+              : (_selectedDesignStyle ?? 'Not specified'),
+          'design_complexity': _selectedDesignComplexities.isNotEmpty 
+              ? '${_selectedDesignComplexities.join(', ')}${_selectedDesignComplexity != null ? ' | Additional: $_selectedDesignComplexity' : ''}'
+              : (_selectedDesignComplexity ?? 'Not specified'),
+          'color_scheme': _selectedColorSchemes.isNotEmpty 
+              ? '${_selectedColorSchemes.join(', ')}${_colorSchemeController.text.isNotEmpty ? ' | Additional: ${_colorSchemeController.text}' : ''}'
+              : (_colorSchemeController.text.isNotEmpty ? _colorSchemeController.text : 'Not specified'),
+          'design_inspiration': _selectedDesignInspirations.isNotEmpty 
+              ? '${_selectedDesignInspirations.join(', ')}${_designInspirationController.text.isNotEmpty ? ' | Additional: ${_designInspirationController.text}' : ''}'
+              : (_designInspirationController.text.isNotEmpty ? _designInspirationController.text : 'Not specified'),
+          'brand_guidelines': _selectedBrandElements.isNotEmpty 
+              ? '${_selectedBrandElements.join(', ')}${_brandGuidelinesController.text.isNotEmpty ? ' | Additional: ${_brandGuidelinesController.text}' : ''}'
+              : (_brandGuidelinesController.text.isNotEmpty ? _brandGuidelinesController.text : 'Not specified'),
           '_subject': 'New Order Request: ${_appNameController.text}',
           '_replyto': _clientEmailController.text,
         };
@@ -223,10 +258,19 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 // Reset form
                 _formKey.currentState!.reset();
                 _selectedPlatforms.clear();
+                _selectedFeatures.clear();
+                _selectedBudgetRanges.clear();
+                _selectedTimelines.clear();
+                _selectedDesignStyles.clear();
+                _selectedDesignComplexities.clear();
+                _selectedColorSchemes.clear();
+                _selectedDesignInspirations.clear();
+                _selectedBrandElements.clear();
                 _selectedAppType = null;
                 _selectedPriority = null;
                 _selectedDesignStyle = null;
                 _selectedDesignComplexity = null;
+                _selectedCountryCode = '+1'; // Reset to default
               },
               child: Text(
                 'OK',
@@ -347,6 +391,154 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                   return null;
                 }
               : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhoneNumberField({bool isMobile = false}) {
+    // Common country codes
+    final countryCodes = [
+      {'code': '+1', 'country': 'US/CA', 'flag': '🇺🇸'},
+      {'code': '+44', 'country': 'UK', 'flag': '🇬🇧'},
+      {'code': '+33', 'country': 'FR', 'flag': '🇫🇷'},
+      {'code': '+49', 'country': 'DE', 'flag': '🇩🇪'},
+      {'code': '+39', 'country': 'IT', 'flag': '🇮🇹'},
+      {'code': '+34', 'country': 'ES', 'flag': '🇪🇸'},
+      {'code': '+31', 'country': 'NL', 'flag': '🇳🇱'},
+      {'code': '+32', 'country': 'BE', 'flag': '🇧🇪'},
+      {'code': '+41', 'country': 'CH', 'flag': '🇨🇭'},
+      {'code': '+46', 'country': 'SE', 'flag': '🇸🇪'},
+      {'code': '+47', 'country': 'NO', 'flag': '🇳🇴'},
+      {'code': '+45', 'country': 'DK', 'flag': '🇩🇰'},
+      {'code': '+358', 'country': 'FI', 'flag': '🇫🇮'},
+      {'code': '+48', 'country': 'PL', 'flag': '🇵🇱'},
+      {'code': '+351', 'country': 'PT', 'flag': '🇵🇹'},
+      {'code': '+353', 'country': 'IE', 'flag': '🇮🇪'},
+      {'code': '+61', 'country': 'AU', 'flag': '🇦🇺'},
+      {'code': '+64', 'country': 'NZ', 'flag': '🇳🇿'},
+      {'code': '+81', 'country': 'JP', 'flag': '🇯🇵'},
+      {'code': '+82', 'country': 'KR', 'flag': '🇰🇷'},
+      {'code': '+86', 'country': 'CN', 'flag': '🇨🇳'},
+      {'code': '+91', 'country': 'IN', 'flag': '🇮🇳'},
+      {'code': '+971', 'country': 'AE', 'flag': '🇦🇪'},
+      {'code': '+966', 'country': 'SA', 'flag': '🇸🇦'},
+      {'code': '+27', 'country': 'ZA', 'flag': '🇿🇦'},
+      {'code': '+55', 'country': 'BR', 'flag': '🇧🇷'},
+      {'code': '+52', 'country': 'MX', 'flag': '🇲🇽'},
+      {'code': '+54', 'country': 'AR', 'flag': '🇦🇷'},
+      {'code': '+90', 'country': 'TR', 'flag': '🇹🇷'},
+      {'code': '+7', 'country': 'RU', 'flag': '🇷🇺'},
+    ];
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isMobile ? 0.4.h : 0.5.h),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1F35).withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            // Country Code Dropdown
+            Container(
+              width: isMobile ? 25.w : 12.w,
+              margin: EdgeInsets.only(left: isMobile ? 1.w : 0.5.w),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: ColorManager.blue.withValues(alpha: 0.3),
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedCountryCode,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF0F1F35),
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.white,
+                    fontSize: isMobile ? 9.sp : 4.5.sp,
+                  ),
+                  items: countryCodes.map((country) {
+                    return DropdownMenuItem<String>(
+                      value: country['code'] as String,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            country['flag'] as String,
+                            style: TextStyle(fontSize: isMobile ? 12.sp : 8.sp),
+                          ),
+                          SizedBox(width: 0.5.w),
+                          Text(
+                            country['code'] as String,
+                            style: GoogleFonts.albertSans(
+                              color: ColorManager.white,
+                              fontSize: isMobile ? 9.sp : 4.5.sp,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      if (value != null) {
+                        _selectedCountryCode = value;
+                      }
+                    });
+                  },
+                ),
+              ),
+            ),
+            SizedBox(width: isMobile ? 1.w : 0.5.w),
+            // Phone Number Input
+            Expanded(
+              child: TextFormField(
+                controller: _clientPhoneController,
+                keyboardType: TextInputType.phone,
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.white,
+                  fontSize: isMobile ? 10.sp : 5.sp,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  hintText: '(555) 123-4567',
+                  labelStyle: GoogleFonts.albertSans(
+                    color: ColorManager.white.withValues(alpha: 0.8),
+                    fontSize: isMobile ? 9.sp : 4.5.sp,
+                  ),
+                  hintStyle: GoogleFonts.albertSans(
+                    color: ColorManager.white.withValues(alpha: 0.5),
+                    fontSize: isMobile ? 9.sp : 4.5.sp,
+                  ),
+                  fillColor: const Color(0xFF0F1F35).withValues(alpha: 0.55),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: ColorManager.blue.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: ColorManager.blue.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(
+                      color: ColorManager.blue,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: isMobile ? 1.w : 0.5.w),
+          ],
         ),
       ),
     );
@@ -492,6 +684,27 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          SizedBox(height: isMobile ? 0.5.h : 0.3.h),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select one or more platforms below',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
           SizedBox(height: isMobile ? 0.8.h : 0.4.h),
           Wrap(
             spacing: isMobile ? 1.w : 0.6.w,
@@ -541,6 +754,915 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ),
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureCheckboxes() {
+    final features = [
+      {'name': 'User Authentication', 'icon': Icons.person},
+      {'name': 'Payment Processing', 'icon': Icons.payment},
+      {'name': 'Push Notifications', 'icon': Icons.notifications},
+      {'name': 'Social Media Integration', 'icon': Icons.share},
+      {'name': 'GPS/Location Services', 'icon': Icons.location_on},
+      {'name': 'Camera/Photo Upload', 'icon': Icons.camera_alt},
+      {'name': 'Chat/Messaging', 'icon': Icons.chat},
+      {'name': 'Search Functionality', 'icon': Icons.search},
+      {'name': 'Offline Mode', 'icon': Icons.cloud_off},
+      {'name': 'Analytics Dashboard', 'icon': Icons.analytics},
+      {'name': 'Admin Panel', 'icon': Icons.admin_panel_settings},
+      {'name': 'Multi-language Support', 'icon': Icons.language},
+    ];
+
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF0F1F35).withValues(alpha: 0.7),
+            const Color(0xFF1A2F4A).withValues(alpha: 0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ColorManager.blue.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ColorManager.blue.withValues(alpha: 0.15),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select features below instead of typing (or add custom features)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: features.map((feature) {
+              final isSelected = _selectedFeatures.contains(feature['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      feature['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      feature['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedFeatures.add(feature['name'] as String);
+                    } else {
+                      _selectedFeatures.remove(feature['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.blue.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.blue : ColorManager.blue.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: isMobile ? 1.h : 0.6.h),
+          Text(
+            'Additional Custom Features (optional):',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 8.sp : 3.5.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: isMobile ? 0.4.h : 0.3.h),
+          _buildTextField(
+            label: '',
+            hint: 'Add any other features not listed above',
+            controller: _appFeaturesController,
+            maxLines: 2,
+            isRequired: false,
+            isMobile: isMobile,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBudgetCheckboxes() {
+    final budgetRanges = [
+      {'name': 'Under \$5,000', 'icon': Icons.attach_money},
+      {'name': '\$5,000 - \$10,000', 'icon': Icons.attach_money},
+      {'name': '\$10,000 - \$25,000', 'icon': Icons.attach_money},
+      {'name': '\$25,000 - \$50,000', 'icon': Icons.attach_money},
+      {'name': '\$50,000 - \$100,000', 'icon': Icons.attach_money},
+      {'name': 'Over \$100,000', 'icon': Icons.attach_money},
+      {'name': 'Flexible/Budget TBD', 'icon': Icons.swap_horiz},
+    ];
+
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF0F1F35).withValues(alpha: 0.7),
+            const Color(0xFF1A2F4A).withValues(alpha: 0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ColorManager.blue.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ColorManager.blue.withValues(alpha: 0.15),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select your budget range below (or specify custom range)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: budgetRanges.map((budget) {
+              final isSelected = _selectedBudgetRanges.contains(budget['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      budget['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      budget['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedBudgetRanges.add(budget['name'] as String);
+                    } else {
+                      _selectedBudgetRanges.remove(budget['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.blue.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.blue : ColorManager.blue.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: isMobile ? 1.h : 0.6.h),
+          Text(
+            'Custom Budget Range (optional):',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 8.sp : 3.5.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: isMobile ? 0.4.h : 0.3.h),
+          _buildTextField(
+            label: '',
+            hint: 'Specify a custom budget range if needed',
+            controller: _budgetController,
+            isRequired: false,
+            isMobile: isMobile,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineCheckboxes() {
+    final timelines = [
+      {'name': 'ASAP / Urgent', 'icon': Icons.flash_on},
+      {'name': '1-2 Months', 'icon': Icons.calendar_today},
+      {'name': '3-4 Months', 'icon': Icons.calendar_today},
+      {'name': '5-6 Months', 'icon': Icons.calendar_today},
+      {'name': '6+ Months', 'icon': Icons.calendar_today},
+      {'name': 'Flexible Timeline', 'icon': Icons.swap_horiz},
+    ];
+
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF0F1F35).withValues(alpha: 0.7),
+            const Color(0xFF1A2F4A).withValues(alpha: 0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ColorManager.blue.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ColorManager.blue.withValues(alpha: 0.15),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select your timeline below (or specify custom timeline)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: timelines.map((timeline) {
+              final isSelected = _selectedTimelines.contains(timeline['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      timeline['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      timeline['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedTimelines.add(timeline['name'] as String);
+                    } else {
+                      _selectedTimelines.remove(timeline['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.blue.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.blue : ColorManager.blue.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: isMobile ? 1.h : 0.6.h),
+          Text(
+            'Custom Timeline (optional):',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 8.sp : 3.5.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: isMobile ? 0.4.h : 0.3.h),
+          _buildTextField(
+            label: '',
+            hint: 'Specify a custom timeline if needed',
+            controller: _timelineController,
+            isRequired: false,
+            isMobile: isMobile,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesignStyleCheckboxes(bool isMobile) {
+    final designStyles = [
+      {'name': 'Modern & Minimalist', 'icon': Icons.clean_hands},
+      {'name': 'Bold & Colorful', 'icon': Icons.palette},
+      {'name': 'Professional & Corporate', 'icon': Icons.business},
+      {'name': 'Playful & Creative', 'icon': Icons.brush},
+      {'name': 'Elegant & Sophisticated', 'icon': Icons.diamond},
+      {'name': 'Tech & Futuristic', 'icon': Icons.rocket_launch},
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select design styles below (or use dropdown)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: designStyles.map((style) {
+              final isSelected = _selectedDesignStyles.contains(style['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      style['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      style['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedDesignStyles.add(style['name'] as String);
+                    } else {
+                      _selectedDesignStyles.remove(style['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.orange.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.orange : ColorManager.orange.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesignComplexityCheckboxes(bool isMobile) {
+    final complexities = [
+      {'name': 'Simple', 'icon': Icons.looks_one},
+      {'name': 'Moderate', 'icon': Icons.looks_two},
+      {'name': 'Complex', 'icon': Icons.looks_3},
+      {'name': 'Very Complex', 'icon': Icons.looks_4},
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select complexity level below (or use dropdown)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: complexities.map((complexity) {
+              final isSelected = _selectedDesignComplexities.contains(complexity['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      complexity['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      complexity['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedDesignComplexities.add(complexity['name'] as String);
+                    } else {
+                      _selectedDesignComplexities.remove(complexity['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.orange.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.orange : ColorManager.orange.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorSchemeCheckboxes(bool isMobile) {
+    final colorSchemes = [
+      {'name': 'Blue & White', 'icon': Icons.color_lens},
+      {'name': 'Dark Theme', 'icon': Icons.dark_mode},
+      {'name': 'Light Theme', 'icon': Icons.light_mode},
+      {'name': 'Warm Colors', 'icon': Icons.wb_sunny},
+      {'name': 'Cool Colors', 'icon': Icons.ac_unit},
+      {'name': 'Monochrome', 'icon': Icons.filter_b_and_w},
+      {'name': 'Vibrant Colors', 'icon': Icons.auto_awesome},
+      {'name': 'Pastel Colors', 'icon': Icons.brush},
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select color schemes below (or describe custom colors)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: colorSchemes.map((scheme) {
+              final isSelected = _selectedColorSchemes.contains(scheme['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      scheme['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      scheme['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedColorSchemes.add(scheme['name'] as String);
+                    } else {
+                      _selectedColorSchemes.remove(scheme['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.orange.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.orange : ColorManager.orange.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: isMobile ? 1.h : 0.6.h),
+          Text(
+            'Custom Color Scheme (optional):',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 8.sp : 3.5.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: isMobile ? 0.4.h : 0.3.h),
+          _buildTextField(
+            label: '',
+            hint: 'Describe your preferred color palette or brand colors',
+            controller: _colorSchemeController,
+            maxLines: 2,
+            isRequired: false,
+            isMobile: isMobile,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesignInspirationCheckboxes(bool isMobile) {
+    final inspirations = [
+      {'name': 'Apple Design', 'icon': Icons.phone_iphone},
+      {'name': 'Google Material', 'icon': Icons.android},
+      {'name': 'Dribbble Style', 'icon': Icons.palette},
+      {'name': 'Behance Portfolio', 'icon': Icons.design_services},
+      {'name': 'Minimalist Apps', 'icon': Icons.apps},
+      {'name': 'Gaming UI', 'icon': Icons.sports_esports},
+      {'name': 'E-commerce Sites', 'icon': Icons.shopping_cart},
+      {'name': 'Social Media Apps', 'icon': Icons.share},
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select inspiration types below (or add custom links)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: inspirations.map((inspiration) {
+              final isSelected = _selectedDesignInspirations.contains(inspiration['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      inspiration['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      inspiration['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedDesignInspirations.add(inspiration['name'] as String);
+                    } else {
+                      _selectedDesignInspirations.remove(inspiration['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.orange.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.orange : ColorManager.orange.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: isMobile ? 1.h : 0.6.h),
+          Text(
+            'Custom Design Inspiration (optional):',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 8.sp : 3.5.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: isMobile ? 0.4.h : 0.3.h),
+          _buildTextField(
+            label: '',
+            hint: 'Links to apps or websites you like, or describe your vision',
+            controller: _designInspirationController,
+            maxLines: 3,
+            isRequired: false,
+            isMobile: isMobile,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrandElementsCheckboxes(bool isMobile) {
+    final brandElements = [
+      {'name': 'Logo Available', 'icon': Icons.image},
+      {'name': 'Brand Guidelines', 'icon': Icons.description},
+      {'name': 'Color Palette', 'icon': Icons.palette},
+      {'name': 'Typography', 'icon': Icons.text_fields},
+      {'name': 'Icon Set', 'icon': Icons.auto_awesome},
+      {'name': 'Illustrations', 'icon': Icons.draw},
+      {'name': 'Photography', 'icon': Icons.camera_alt},
+      {'name': 'No Brand Assets', 'icon': Icons.close},
+    ];
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 1.h : 0.6.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColorManager.orange,
+                size: isMobile ? 12.sp : 8.sp,
+              ),
+              SizedBox(width: 0.5.w),
+              Expanded(
+                child: Text(
+                  '💡 Tip: Select brand elements you have below (or describe custom assets)',
+                  style: GoogleFonts.albertSans(
+                    color: ColorManager.orange.withValues(alpha: 0.9),
+                    fontSize: isMobile ? 8.sp : 3.5.sp,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 0.8.h : 0.4.h),
+          Wrap(
+            spacing: isMobile ? 1.w : 0.6.w,
+            runSpacing: isMobile ? 0.6.h : 0.3.h,
+            children: brandElements.map((element) {
+              final isSelected = _selectedBrandElements.contains(element['name']);
+              return FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      element['icon'] as IconData,
+                      size: isMobile ? 12.sp : 7.sp,
+                      color: isSelected ? Colors.white : ColorManager.white,
+                    ),
+                    SizedBox(width: isMobile ? 0.4.w : 0.25.w),
+                    Text(
+                      element['name'] as String,
+                      style: GoogleFonts.albertSans(
+                        color: isSelected ? Colors.white : ColorManager.white,
+                        fontSize: isMobile ? 8.sp : 3.5.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedBrandElements.add(element['name'] as String);
+                    } else {
+                      _selectedBrandElements.remove(element['name'] as String);
+                    }
+                  });
+                },
+                backgroundColor: const Color(0xFF0F1F35).withValues(alpha: 0.6),
+                selectedColor: ColorManager.orange.withValues(alpha: 0.7),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? ColorManager.orange : ColorManager.orange.withValues(alpha: 0.5),
+                  width: isMobile ? 1.5 : 0.8,
+                ),
+                labelPadding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 0.8.w : 0.4.w,
+                  vertical: isMobile ? 0.4.h : 0.2.h,
+                ),
+              );
+            }).toList(),
+          ),
+          SizedBox(height: isMobile ? 1.h : 0.6.h),
+          Text(
+            'Custom Brand Guidelines (optional):',
+            style: GoogleFonts.albertSans(
+              color: ColorManager.white.withValues(alpha: 0.8),
+              fontSize: isMobile ? 8.sp : 3.5.sp,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: isMobile ? 0.4.h : 0.3.h),
+          _buildTextField(
+            label: '',
+            hint: 'Do you have a logo, brand guidelines, or design assets?',
+            controller: _brandGuidelinesController,
+            maxLines: 3,
+            isRequired: false,
+            isMobile: isMobile,
           ),
         ],
       ),
@@ -660,15 +1782,30 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
             ),
             SizedBox(height: isMobile ? 1.2.h : 1.h),
             
-            // Design Style Preference with icons
+            // Design Style Preference with checkboxes
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F1F35).withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: ColorManager.blue.withValues(alpha: 0.2),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF0F1F35).withValues(alpha: 0.5),
+                    const Color(0xFF1A2F4A).withValues(alpha: 0.4),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ColorManager.orange.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorManager.orange.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -677,7 +1814,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     children: [
                       Icon(
                         Icons.style,
-                        color: ColorManager.blue,
+                        color: ColorManager.orange,
                         size: isMobile ? 14.sp : 8.sp,
                       ),
                       SizedBox(width: 0.8.w),
@@ -692,6 +1829,17 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     ],
                   ),
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
+                  _buildDesignStyleCheckboxes(isMobile),
+                  SizedBox(height: isMobile ? 1.h : 0.6.h),
+                  Text(
+                    'Or use dropdown (optional):',
+                    style: GoogleFonts.albertSans(
+                      color: ColorManager.white.withValues(alpha: 0.7),
+                      fontSize: isMobile ? 8.sp : 3.5.sp,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  SizedBox(height: isMobile ? 0.4.h : 0.3.h),
                   _buildDropdown(
                     label: '',
                     items: [
@@ -716,7 +1864,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
             
             SizedBox(height: isMobile ? 1.h : 0.8.h),
             
-            // Design Complexity Level
+            // Design Complexity Level with checkboxes
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
               decoration: BoxDecoration(
@@ -730,12 +1878,12 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  color: ColorManager.orange.withValues(alpha: 0.3),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    color: ColorManager.orange.withValues(alpha: 0.1),
                     blurRadius: 6,
                     spreadRadius: 1,
                   ),
@@ -748,7 +1896,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     children: [
                       Icon(
                         Icons.layers,
-                        color: ColorManager.blue,
+                        color: ColorManager.orange,
                         size: isMobile ? 14.sp : 8.sp,
                       ),
                       SizedBox(width: 0.8.w),
@@ -763,6 +1911,17 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     ],
                   ),
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
+                  _buildDesignComplexityCheckboxes(isMobile),
+                  SizedBox(height: isMobile ? 1.h : 0.6.h),
+                  Text(
+                    'Or use dropdown (optional):',
+                    style: GoogleFonts.albertSans(
+                      color: ColorManager.white.withValues(alpha: 0.7),
+                      fontSize: isMobile ? 8.sp : 3.5.sp,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  SizedBox(height: isMobile ? 0.4.h : 0.3.h),
                   _buildDropdown(
                     label: '',
                     items: [
@@ -786,7 +1945,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
             
             SizedBox(height: isMobile ? 1.h : 0.8.h),
             
-            // Color Scheme
+            // Color Scheme with checkboxes
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
               decoration: BoxDecoration(
@@ -800,12 +1959,12 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  color: ColorManager.orange.withValues(alpha: 0.3),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    color: ColorManager.orange.withValues(alpha: 0.1),
                     blurRadius: 6,
                     spreadRadius: 1,
                   ),
@@ -818,7 +1977,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     children: [
                       Icon(
                         Icons.color_lens,
-                        color: ColorManager.blue,
+                        color: ColorManager.orange,
                         size: isMobile ? 14.sp : 8.sp,
                       ),
                       SizedBox(width: 0.8.w),
@@ -833,21 +1992,14 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     ],
                   ),
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
-                  _buildTextField(
-                    label: '',
-                    hint: 'Describe your preferred color palette or brand colors',
-                    controller: _colorSchemeController,
-                    maxLines: 2,
-                    isRequired: false,
-                    isMobile: isMobile,
-                  ),
+                  _buildColorSchemeCheckboxes(isMobile),
                 ],
               ),
             ),
             
             SizedBox(height: isMobile ? 1.h : 0.8.h),
             
-            // Design Inspiration
+            // Design Inspiration with checkboxes
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
               decoration: BoxDecoration(
@@ -861,12 +2013,12 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  color: ColorManager.orange.withValues(alpha: 0.3),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    color: ColorManager.orange.withValues(alpha: 0.1),
                     blurRadius: 6,
                     spreadRadius: 1,
                   ),
@@ -879,7 +2031,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     children: [
                       Icon(
                         Icons.lightbulb,
-                        color: ColorManager.blue,
+                        color: ColorManager.orange,
                         size: isMobile ? 14.sp : 8.sp,
                       ),
                       SizedBox(width: 0.8.w),
@@ -894,21 +2046,14 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     ],
                   ),
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
-                  _buildTextField(
-                    label: '',
-                    hint: 'Links to apps or websites you like, or describe your vision',
-                    controller: _designInspirationController,
-                    maxLines: 3,
-                    isRequired: false,
-                    isMobile: isMobile,
-                  ),
+                  _buildDesignInspirationCheckboxes(isMobile),
                 ],
               ),
             ),
             
             SizedBox(height: isMobile ? 1.h : 0.8.h),
             
-            // Brand Guidelines
+            // Brand Guidelines with checkboxes
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
               decoration: BoxDecoration(
@@ -922,12 +2067,12 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: ColorManager.blue.withValues(alpha: 0.3),
+                  color: ColorManager.orange.withValues(alpha: 0.3),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: ColorManager.blue.withValues(alpha: 0.1),
+                    color: ColorManager.orange.withValues(alpha: 0.1),
                     blurRadius: 6,
                     spreadRadius: 1,
                   ),
@@ -940,7 +2085,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     children: [
                       Icon(
                         Icons.folder_special,
-                        color: ColorManager.blue,
+                        color: ColorManager.orange,
                         size: isMobile ? 14.sp : 8.sp,
                       ),
                       SizedBox(width: 0.8.w),
@@ -955,14 +2100,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                     ],
                   ),
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
-                  _buildTextField(
-                    label: '',
-                    hint: 'Do you have a logo, brand guidelines, or design assets?',
-                    controller: _brandGuidelinesController,
-                    maxLines: 3,
-                    isRequired: false,
-                    isMobile: isMobile,
-                  ),
+                  _buildBrandElementsCheckboxes(isMobile),
                 ],
               ),
             ),
@@ -1024,13 +2162,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                             controller: _clientEmailController,
                             isMobile: isMobile,
                           ),
-                          _buildTextField(
-                            label: 'Phone Number',
-                            hint: '+1 (555) 123-4567',
-                            controller: _clientPhoneController,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
+                          _buildPhoneNumberField(isMobile: isMobile),
                           _buildTextField(
                             label: 'Company/Organization',
                             hint: 'Your company name (optional)',
@@ -1078,14 +2210,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                             maxLines: 4,
                             isMobile: isMobile,
                           ),
-                          _buildTextField(
-                            label: 'Key Features',
-                            hint: 'List main features (e.g., User authentication, Payment processing, etc.)',
-                            controller: _appFeaturesController,
-                            maxLines: 4,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
+                          _buildFeatureCheckboxes(),
                         ],
                         isMobile: isMobile,
                       ),
@@ -1121,20 +2246,9 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                             },
                             isMobile: isMobile,
                           ),
-                          _buildTextField(
-                            label: 'Budget Range',
-                            hint: r'e.g., $5,000 - $10,000 or Flexible',
-                            controller: _budgetController,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Timeline',
-                            hint: 'e.g., 3 months, ASAP, Flexible',
-                            controller: _timelineController,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
+                          _buildBudgetCheckboxes(),
+                          SizedBox(height: isMobile ? 1.h : 0.8.h),
+                          _buildTimelineCheckboxes(),
                           _buildTextField(
                             label: 'Additional Notes',
                             hint: 'Any other information you\'d like to share',
