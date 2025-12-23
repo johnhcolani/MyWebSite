@@ -12,8 +12,8 @@ class AutoScrollImage extends StatefulWidget {
 class _AutoScrollImageState extends State<AutoScrollImage> {
 
   final ScrollController _scrollController = ScrollController();
-  final int itemCount = 10;
-  final double itemWidth = 80.0;
+  final int itemCount = 11;
+  final double itemWidth = 100.0;
   final Duration autoScrollDuration = const Duration(seconds: 1);
   final Duration timerInterval = const Duration(seconds: 3);
   Timer? _timer;

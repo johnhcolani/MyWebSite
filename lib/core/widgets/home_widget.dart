@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:auto_scroll_image/auto_scroll_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -68,73 +67,133 @@ class HomeWidget extends StatelessWidget {
                           //     ],
                           //   ),
                           // ),
-                          // Main glass text with gradient
-                          ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              final bool isMobile = wi < 600;
-                              return LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
-                                  Colors.white.withValues(alpha: isMobile ? 0.4 : 0.25),
-                                  Colors.white.withValues(alpha: isMobile ? 0.5 : 0.35),
-                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
-                                ],
-                                stops: [0.0, 0.3, 0.7, 1.0],
-                              ).createShader(bounds);
-                            },
-                            child: Text(
-                              'We design and build',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.albertSans(
-                                fontSize: 24.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  // Inner white shadow (simulated with negative offset)
-                                  Shadow(
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    blurRadius: 3,
-                                    offset: Offset(0, -1),
-                                  ),
-                                  Shadow(
-                                    color: Colors.white.withValues(alpha: 0.4),
-                                    blurRadius: 2,
-                                    offset: Offset(0, -0.5),
-                                  ),
-                                  // Deep shadow for depth
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.5),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                  // Medium shadow
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 4),
-                                  ),
-                                  // Soft shadow
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 12,
-                                    offset: Offset(0, 6),
-                                  ),
-                                  // Outer glow
-                                  Shadow(
-                                    color: ColorManager.white.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 0),
-                                  ),
-                                  Shadow(
-                                    color: ColorManager.white.withValues(alpha: 0.2),
-                                    blurRadius: 15,
-                                    offset: Offset(0, 0),
-                                  ),
-                                ],
+                          // Main glass text with realistic liquid glass effect
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Background glow
+                              Text(
+                                'We design and build',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.albertSans(
+                                  fontSize: 24.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.transparent,
+                                  shadows: [
+                                    Shadow(
+                                      color: ColorManager.blue.withValues(alpha: 0.4),
+                                      blurRadius: 30,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    Shadow(
+                                      color: ColorManager.white.withValues(alpha: 0.3),
+                                      blurRadius: 20,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                              // Liquid glass effect with multiple layers
+                              ShaderMask(
+                                shaderCallback: (Rect bounds) {
+                                  final bool isMobile = wi < 600;
+                                  return LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      // Top highlight
+                                      Colors.white.withValues(alpha: isMobile ? 0.95 : 0.85),
+                                      // Bright center
+                                      Colors.white.withValues(alpha: isMobile ? 0.75 : 0.65),
+                                      // Mid tone
+                                      Colors.white.withValues(alpha: isMobile ? 0.45 : 0.35),
+                                      // Darker mid
+                                      Colors.white.withValues(alpha: isMobile ? 0.35 : 0.25),
+                                      // Bottom highlight
+                                      Colors.white.withValues(alpha: isMobile ? 0.65 : 0.55),
+                                      // Edge highlight
+                                      Colors.white.withValues(alpha: isMobile ? 0.85 : 0.75),
+                                    ],
+                                    stops: [0.0, 0.15, 0.4, 0.6, 0.8, 1.0],
+                                  ).createShader(bounds);
+                                },
+                                child: Text(
+                                  'We design and build',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.albertSans(
+                                    fontSize: 24.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      // Inner highlight (top)
+                                      Shadow(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        blurRadius: 2,
+                                        offset: Offset(0, -2),
+                                      ),
+                                      Shadow(
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        blurRadius: 4,
+                                        offset: Offset(0, -1),
+                                      ),
+                                      // Inner shadow (bottom)
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.6),
+                                        blurRadius: 3,
+                                        offset: Offset(0, 2),
+                                      ),
+                                      // Depth shadow
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.5),
+                                        blurRadius: 6,
+                                        offset: Offset(0, 3),
+                                      ),
+                                      // Soft depth
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.4),
+                                        blurRadius: 10,
+                                        offset: Offset(0, 5),
+                                      ),
+                                      // Outer glow
+                                      Shadow(
+                                        color: ColorManager.blue.withValues(alpha: 0.4),
+                                        blurRadius: 15,
+                                        offset: Offset(0, 0),
+                                      ),
+                                      Shadow(
+                                        color: ColorManager.white.withValues(alpha: 0.3),
+                                        blurRadius: 20,
+                                        offset: Offset(0, 0),
+                                      ),
+                                      // Extended glow
+                                      Shadow(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                        blurRadius: 25,
+                                        offset: Offset(0, 0),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Top highlight reflection
+                              Positioned(
+                                top: -5,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  height: 2,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.white.withValues(alpha: 0.6),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -193,72 +252,132 @@ class HomeWidget extends StatelessWidget {
                         ),
                       ],
                     ),
-                    ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              final bool isMobile = wi < 600;
-                              return LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
-                                  Colors.white.withValues(alpha: isMobile ? 0.4 : 0.25),
-                                  Colors.white.withValues(alpha: isMobile ? 0.5 : 0.35),
-                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
-                                ],
-                                stops: [0.0, 0.3, 0.7, 1.0],
-                              ).createShader(bounds);
-                            },
-                            child: Text(
-                              'With single Codebase',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.albertSans(
-                                fontSize: 25.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                shadows: [
-                                  // Inner white shadow (simulated with negative offset)
-                                  Shadow(
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    blurRadius: 3,
-                                    offset: Offset(0, -1),
-                                  ),
-                                  Shadow(
-                                    color: Colors.white.withValues(alpha: 0.4),
-                                    blurRadius: 2,
-                                    offset: Offset(0, -0.5),
-                                  ),
-                                  // Deep shadow for depth
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.5),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 2),
-                                  ),
-                                  // Medium shadow
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 4),
-                                  ),
-                                  // Soft shadow
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 12,
-                                    offset: Offset(0, 6),
-                                  ),
-                                  // Outer glow
-                                  Shadow(
-                                    color: ColorManager.white.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: Offset(0, 0),
-                                  ),
-                                  Shadow(
-                                    color: ColorManager.white.withValues(alpha: 0.2),
-                                    blurRadius: 15,
-                                    offset: Offset(0, 0),
-                                  ),
-                                ],
+                    Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Background glow
+                              Text(
+                                'With single Codebase',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.albertSans(
+                                  fontSize: 25.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.transparent,
+                                  shadows: [
+                                    Shadow(
+                                      color: ColorManager.blue.withValues(alpha: 0.4),
+                                      blurRadius: 30,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    Shadow(
+                                      color: ColorManager.white.withValues(alpha: 0.3),
+                                      blurRadius: 20,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                              // Liquid glass effect with multiple layers
+                              ShaderMask(
+                                shaderCallback: (Rect bounds) {
+                                  final bool isMobile = wi < 600;
+                                  return LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      // Top highlight
+                                      Colors.white.withValues(alpha: isMobile ? 0.95 : 0.85),
+                                      // Bright center
+                                      Colors.white.withValues(alpha: isMobile ? 0.75 : 0.65),
+                                      // Mid tone
+                                      Colors.white.withValues(alpha: isMobile ? 0.45 : 0.35),
+                                      // Darker mid
+                                      Colors.white.withValues(alpha: isMobile ? 0.35 : 0.25),
+                                      // Bottom highlight
+                                      Colors.white.withValues(alpha: isMobile ? 0.65 : 0.55),
+                                      // Edge highlight
+                                      Colors.white.withValues(alpha: isMobile ? 0.85 : 0.75),
+                                    ],
+                                    stops: [0.0, 0.15, 0.4, 0.6, 0.8, 1.0],
+                                  ).createShader(bounds);
+                                },
+                                child: Text(
+                                  'With single Codebase',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.albertSans(
+                                    fontSize: 25.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    shadows: [
+                                      // Inner highlight (top)
+                                      Shadow(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        blurRadius: 2,
+                                        offset: Offset(0, -2),
+                                      ),
+                                      Shadow(
+                                        color: Colors.white.withValues(alpha: 0.7),
+                                        blurRadius: 4,
+                                        offset: Offset(0, -1),
+                                      ),
+                                      // Inner shadow (bottom)
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.6),
+                                        blurRadius: 3,
+                                        offset: Offset(0, 2),
+                                      ),
+                                      // Depth shadow
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.5),
+                                        blurRadius: 6,
+                                        offset: Offset(0, 3),
+                                      ),
+                                      // Soft depth
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.4),
+                                        blurRadius: 10,
+                                        offset: Offset(0, 5),
+                                      ),
+                                      // Outer glow
+                                      Shadow(
+                                        color: ColorManager.blue.withValues(alpha: 0.4),
+                                        blurRadius: 15,
+                                        offset: Offset(0, 0),
+                                      ),
+                                      Shadow(
+                                        color: ColorManager.white.withValues(alpha: 0.3),
+                                        blurRadius: 20,
+                                        offset: Offset(0, 0),
+                                      ),
+                                      // Extended glow
+                                      Shadow(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                        blurRadius: 25,
+                                        offset: Offset(0, 0),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Top highlight reflection
+                              Positioned(
+                                top: -5,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  height: 2,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.white.withValues(alpha: 0.6),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                     // Text(
                     //   'Just with single Codebase',
