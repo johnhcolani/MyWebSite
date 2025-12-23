@@ -47,27 +47,27 @@ class HomeWidget extends StatelessWidget {
                         alignment: Alignment.center,
                         children: [
                           // Glow effect behind text
-                          Text(
-                            'We design and build',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.albertSans(
-                              fontSize: 24.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.transparent,
-                              shadows: [
-                                Shadow(
-                                  color: ColorManager.white.withValues(alpha: 0.15),
-                                  blurRadius: 20,
-                                  offset: Offset(0, 0),
-                                ),
-                                Shadow(
-                                  color: ColorManager.blue.withValues(alpha: 0.1),
-                                  blurRadius: 30,
-                                  offset: Offset(0, 0),
-                                ),
-                              ],
-                            ),
-                          ),
+                          // Text(
+                          //   'We design and build',
+                          //   textAlign: TextAlign.center,
+                          //   style: GoogleFonts.albertSans(
+                          //     fontSize: 24.sp,
+                          //     fontWeight: FontWeight.bold,
+                          //     color: Colors.transparent,
+                          //     shadows: [
+                          //       Shadow(
+                          //         color: ColorManager.white.withValues(alpha: 0.15),
+                          //         blurRadius: 20,
+                          //         offset: Offset(0, 0),
+                          //       ),
+                          //       Shadow(
+                          //         color: ColorManager.blue.withValues(alpha: 0.1),
+                          //         blurRadius: 30,
+                          //         offset: Offset(0, 0),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ),
                           // Main glass text with gradient
                           ShaderMask(
                             shaderCallback: (Rect bounds) {
@@ -193,16 +193,85 @@ class HomeWidget extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Text(
-                      'Just with single Codebase',
-                      style: GoogleFonts.albertSans(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.orange,
-                      ),
-                    ),
+                    ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              final bool isMobile = wi < 600;
+                              return LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
+                                  Colors.white.withValues(alpha: isMobile ? 0.4 : 0.25),
+                                  Colors.white.withValues(alpha: isMobile ? 0.5 : 0.35),
+                                  Colors.white.withValues(alpha: isMobile ? 0.7 : 0.5),
+                                ],
+                                stops: [0.0, 0.3, 0.7, 1.0],
+                              ).createShader(bounds);
+                            },
+                            child: Text(
+                              'With single Codebase',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.albertSans(
+                                fontSize: 25.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                shadows: [
+                                  // Inner white shadow (simulated with negative offset)
+                                  Shadow(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    blurRadius: 3,
+                                    offset: Offset(0, -1),
+                                  ),
+                                  Shadow(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    blurRadius: 2,
+                                    offset: Offset(0, -0.5),
+                                  ),
+                                  // Deep shadow for depth
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.5),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  ),
+                                  // Medium shadow
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 4),
+                                  ),
+                                  // Soft shadow
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 12,
+                                    offset: Offset(0, 6),
+                                  ),
+                                  // Outer glow
+                                  Shadow(
+                                    color: ColorManager.white.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 0),
+                                  ),
+                                  Shadow(
+                                    color: ColorManager.white.withValues(alpha: 0.2),
+                                    blurRadius: 15,
+                                    offset: Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                    // Text(
+                    //   'Just with single Codebase',
+                    //   style: GoogleFonts.albertSans(
+                        
+                    //     fontSize: 15.sp,
+                    //     fontWeight: FontWeight.bold,
+                    //     color: ColorManager.orange,
+                    //   ),
+                      
+                    // ),
                     SizedBox(
-                      height: he * 0.02,
+                      height: he * 0.1,
                     ),
                     Padding(
                       padding: EdgeInsets.symmetric(

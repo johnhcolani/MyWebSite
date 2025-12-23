@@ -104,6 +104,8 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
 
       try {
         // Formspree is configured
+        print('📧 Starting form submission...');
+        print('📧 Formspree Endpoint: $_formspreeEndpoint');
 
         // Prepare form data
         final formData = {
@@ -147,7 +149,12 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
           '_replyto': _clientEmailController.text,
         };
         
+        print('📧 Form data prepared: ${formData.keys.length} fields');
+        print('📧 Client Email: ${formData['email']}');
+        print('📧 App Name: ${formData['app_name']}');
+        
         // Send form using Formspree
+        print('📧 Sending POST request to Formspree...');
         final response = await http.post(
           Uri.parse(_formspreeEndpoint),
           headers: {
@@ -157,29 +164,43 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
           body: jsonEncode(formData),
         );
 
+        print('📧 Response received!');
+        print('📧 Status Code: ${response.statusCode}');
+        print('📧 Response Headers: ${response.headers}');
+        print('📧 Response Body: ${response.body}');
+
         setState(() {
           _isSubmitting = false;
         });
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
+        // Formspree returns 200, 201, or 302 (redirect) for successful submissions
+        if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 302) {
+          print('✅ Form submitted successfully!');
           // Show success dialog
           _showSuccessDialog(isEmailSent: true);
         } else {
+          print('❌ Form submission failed with status: ${response.statusCode}');
+          print('❌ Response body: ${response.body}');
           // Show error message with response details
           _showErrorDialog(
             'Failed to send form.\n\n'
             'Status Code: ${response.statusCode}\n'
             'Response: ${response.body}\n\n'
-            'Please check your Formspree endpoint.',
+            'Please check your Formspree endpoint.\n\n'
+            'Note: Formspree may have spam protection that blocks duplicate submissions. Check your Formspree dashboard.',
           );
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
+        print('❌ Exception occurred during form submission:');
+        print('❌ Error: $e');
+        print('❌ Stack Trace: $stackTrace');
         setState(() {
           _isSubmitting = false;
         });
         _showErrorDialog(
           'Error sending form: ${e.toString()}\n\n'
-          'Please check your Formspree configuration and internet connection.',
+          'Please check your Formspree configuration and internet connection.\n\n'
+          'Check the browser console (F12) for detailed error logs.',
         );
       }
     }
