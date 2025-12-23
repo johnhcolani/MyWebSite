@@ -119,37 +119,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Icon(
-                Icons.location_on,
-                color: ColorManager.blue,
-                size: isMobile ? wi * 0.04 : (isTablet ? wi * 0.02 : wi * 0.02),
-              ),
-              SizedBox(width: isMobile ? 6 : 8),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Based in ',
-                      style: TextStyle(
-                        fontSize: isMobile ? 10 : (isTablet ? 6.sp : 6.sp),
-                        color: ColorManager.orange,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Richmond, VA ',
-                      style: TextStyle(
-                        fontSize: isMobile ? 10 : (isTablet ? 6.sp : 6.sp),
-                        fontWeight: FontWeight.bold,
-                        color: ColorManager.orange,
-                      ),
-                    ),
-                  ],
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Based in ',
+                  style: TextStyle(
+                    fontSize: isMobile ? 10 : (isTablet ? 6.sp : 6.sp),
+                    color: ColorManager.orange,
+                  ),
                 ),
-              ),
-            ],
+                TextSpan(
+                  text: 'Richmond, VA ',
+                  style: TextStyle(
+                    fontSize: isMobile ? 10 : (isTablet ? 6.sp : 6.sp),
+                    fontWeight: FontWeight.bold,
+                    color: ColorManager.orange,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

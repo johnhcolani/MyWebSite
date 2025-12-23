@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:my_web_site/core/ColorManager.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// Conditional imports for web iframe creation
+import 'package:my_web_site/screens/portfolio_webview_stub_web.dart'
+    if (dart.library.html) 'package:my_web_site/screens/portfolio_webview_web.dart';
+
 // Conditional import - only import webview_flutter for mobile platforms
 import 'package:webview_flutter/webview_flutter.dart' 
     if (dart.library.html) 'package:my_web_site/screens/portfolio_webview_stub.dart';
@@ -24,12 +28,32 @@ class _PortfolioWebViewScreenState extends State<PortfolioWebViewScreen> {
   void initState() {
     super.initState();
     if (kIsWeb) {
-      // For web, open URL in in-app web view
-      _openUrlInBrowser();
-      _isLoading = false;
+      // For web, create iframe to embed portfolio in-app
+      _initializeWebIframe();
     } else {
       // For mobile platforms, use WebView
       _initializeWebView();
+    }
+  }
+
+  void _initializeWebIframe() {
+    if (!kIsWeb) return;
+    
+    try {
+      // Create iframe using web-specific implementation
+      _iframeViewId = createWebIframe(_url);
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -91,7 +115,26 @@ class _PortfolioWebViewScreenState extends State<PortfolioWebViewScreen> {
   }
 
   Widget _buildWebView() {
-    // For web, use url_launcher to open in new tab with in-app web view
+    // For web, use iframe to embed portfolio in-app
+    if (_iframeViewId != null) {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xff020923),
+              Color(0xff051136),
+            ],
+          ),
+        ),
+        child: HtmlElementView(
+          viewType: _iframeViewId!,
+        ),
+      );
+    }
+    
+    // Fallback if iframe creation failed
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -108,13 +151,13 @@ class _PortfolioWebViewScreenState extends State<PortfolioWebViewScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.launch,
+              Icons.error_outline,
               size: 80,
               color: ColorManager.orange,
             ),
             const SizedBox(height: 32),
             Text(
-              'Opening Portfolio',
+              'Unable to Load Portfolio',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,
@@ -123,7 +166,7 @@ class _PortfolioWebViewScreenState extends State<PortfolioWebViewScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Your portfolio is opening in a new tab.',
+              'Please try opening in a new tab.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 18,
@@ -166,7 +209,7 @@ class _PortfolioWebViewScreenState extends State<PortfolioWebViewScreen> {
     final bool isMobile = wi < 600;
     
     if (kIsWeb) {
-      // For web, open in browser (iframe blocked by Google Sites)
+      // For web, use iframe to embed portfolio in-app
       return Scaffold(
         appBar: AppBar(
           iconTheme: IconThemeData(
@@ -181,8 +224,48 @@ class _PortfolioWebViewScreenState extends State<PortfolioWebViewScreen> {
               fontSize: isMobile ? 20 : 22,
             ),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.open_in_new, color: Colors.white),
+              tooltip: 'Open in new tab',
+              onPressed: () {
+                _openUrlInBrowser();
+              },
+            ),
+          ],
         ),
-        body: _buildWebView(),
+        body: _isLoading
+            ? Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xff020923),
+                      Color(0xff051136),
+                    ],
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(ColorManager.orange),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Loading portfolio...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isMobile ? 16 : 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : _buildWebView(),
       );
     }
     
