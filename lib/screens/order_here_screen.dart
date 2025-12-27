@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:my_web_site/core/ColorManager.dart';
 import 'package:my_web_site/helper/app_background.dart';
 import 'package:sizer/sizer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OrderHereScreen extends StatefulWidget {
   const OrderHereScreen({super.key});
@@ -16,28 +17,55 @@ class OrderHereScreen extends StatefulWidget {
 class _OrderHereScreenState extends State<OrderHereScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
-  
-  // EmailJS Configuration - Replace these with your EmailJS credentials
-  // Get these from https://www.emailjs.com/
-  // After signing up, create a service, template, and get your public key
-  static const String _emailJSServiceID = 'YOUR_SERVICE_ID';
-  static const String _emailJSTemplateID = 'YOUR_TEMPLATE_ID';
-  static const String _emailJSPublicKey = 'YOUR_PUBLIC_KEY';
-  
+
+  // Email Service Configuration
+  // Choose one of the following options:
+
+  // OPTION 1: Formspree (Recommended - Simple & Reliable)
+  // 1. Go to https://formspree.io/ and sign up (free tier: 50 submissions/month)
+  // 2. Create a new form and get your form endpoint
+  // 3. Replace the endpoint below with your Formspree form endpoint
+  // 4. Configure the recipient email in your Formspree dashboard (Settings > Email)
+  // Example: 'https://formspree.io/f/YOUR_FORM_ID'
+  // Note: Free tier sends to the email used when creating the form. Custom _to field requires paid plan.
+  static const String _formspreeEndpoint = 'https://formspree.io/f/maqwlqlq';
+
+  // OPTION 2: Web3Forms (Alternative - Also Free)
+  // 1. Go to https://web3forms.com/ and sign up (free tier: 250 submissions/month)
+  // 2. Get your access key from the dashboard
+  // 3. Replace the access key below
+  // 4. Set _useWeb3Forms to true and _useFormspree to false
+  static const String _web3FormsAccessKey = 'YOUR_WEB3FORMS_ACCESS_KEY';
+
+  // Which service to use (set to true for the service you want to use)
+  static const bool _useFormspree =
+      true; // Set to false to use Web3Forms instead
+  static const bool _useWeb3Forms = false;
+
+  // Recipient email (where you want to receive the form submissions)
+  // Note: For Formspree free tier, this should match the email in your Formspree dashboard.
+  // The _recipientEmail constant is currently only used by Web3Forms.
+  static const String _recipientEmail = 'johnacolani@gmail.com';
+
   // Controllers
   final TextEditingController _clientNameController = TextEditingController();
   final TextEditingController _clientEmailController = TextEditingController();
   final TextEditingController _clientPhoneController = TextEditingController();
-  final TextEditingController _clientCompanyController = TextEditingController();
+  final TextEditingController _clientCompanyController =
+      TextEditingController();
   final TextEditingController _appNameController = TextEditingController();
-  final TextEditingController _appDescriptionController = TextEditingController();
+  final TextEditingController _appDescriptionController =
+      TextEditingController();
   final TextEditingController _appFeaturesController = TextEditingController();
   final TextEditingController _budgetController = TextEditingController();
   final TextEditingController _timelineController = TextEditingController();
-  final TextEditingController _additionalNotesController = TextEditingController();
+  final TextEditingController _additionalNotesController =
+      TextEditingController();
   final TextEditingController _colorSchemeController = TextEditingController();
-  final TextEditingController _designInspirationController = TextEditingController();
-  final TextEditingController _brandGuidelinesController = TextEditingController();
+  final TextEditingController _designInspirationController =
+      TextEditingController();
+  final TextEditingController _brandGuidelinesController =
+      TextEditingController();
 
   // Dropdown values
   String? _selectedAppType;
@@ -47,6 +75,16 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
 
   // Platform checkboxes
   Set<String> _selectedPlatforms = {};
+
+  // Storage keys
+  static const String _storageKeyPrefix = 'order_form_';
+  bool _isDataLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedFormData();
+  }
 
   @override
   void dispose() {
@@ -78,91 +116,410 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
         return;
       }
 
+      // Save form data before submission in case of failure
+      await _saveFormData();
+
       setState(() {
         _isSubmitting = true;
       });
 
       try {
-        // Prepare email content
-        final emailBody = _buildEmailBody();
-        
-        // Send email using EmailJS
-        final response = await http.post(
-          Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'service_id': _emailJSServiceID,
-            'template_id': _emailJSTemplateID,
-            'user_id': _emailJSPublicKey,
-            'template_params': {
-              'from_name': _clientNameController.text,
-              'from_email': _clientEmailController.text,
-              'to_email': 'johnacolani@gmail.com',
-              'subject': 'New Order Request: ${_appNameController.text}',
-              'message': emailBody,
-            },
-          }),
-        );
+        http.Response response;
+
+        if (_useFormspree) {
+          // Send email using Formspree
+          response = await _sendViaFormspree();
+        } else if (_useWeb3Forms) {
+          // Send email using Web3Forms
+          response = await _sendViaWeb3Forms();
+        } else {
+          throw Exception(
+              'No email service configured. Please set _useFormspree or _useWeb3Forms to true.');
+        }
 
         setState(() {
           _isSubmitting = false;
         });
 
-        if (response.statusCode == 200) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          // Clear saved form data on success
+          await _clearSavedFormData();
           // Show success dialog
           _showSuccessDialog();
         } else {
-          // Show error message
-          _showErrorDialog('Failed to send email. Please try again later.');
+          // Show error message with more details
+          String errorMessage = 'Failed to send email. Please try again later.';
+          try {
+            final responseBody = jsonDecode(response.body);
+            if (responseBody.containsKey('error')) {
+              errorMessage = 'Error: ${responseBody['error']}';
+            } else if (responseBody.containsKey('message')) {
+              errorMessage = 'Error: ${responseBody['message']}';
+            } else if (responseBody.containsKey('errors')) {
+              // Formspree error format
+              final errors = responseBody['errors'];
+              if (errors is List && errors.isNotEmpty) {
+                errorMessage =
+                    'Error: ${errors[0]['message'] ?? 'Validation error'}';
+              }
+            }
+          } catch (e) {
+            // If parsing fails, use default message
+            errorMessage =
+                'Failed to send email (Status: ${response.statusCode}). Please check your email service configuration.';
+          }
+          _showErrorDialog(errorMessage);
         }
       } catch (e) {
         setState(() {
           _isSubmitting = false;
         });
-        _showErrorDialog('Error: ${e.toString()}');
+        String errorMessage = 'Error: ${e.toString()}';
+        if (e.toString().contains('SocketException') ||
+            e.toString().contains('network')) {
+          errorMessage =
+              'Network error. Please check your internet connection and try again.';
+        } else if (e.toString().contains('timeout')) {
+          errorMessage = e.toString().replaceAll('Exception: ', '');
+        } else if (_useFormspree &&
+            _formspreeEndpoint.contains('YOUR_FORM_ID')) {
+          errorMessage =
+              'Formspree configuration error. Please configure your Formspree endpoint in the code.';
+        } else if (_useWeb3Forms &&
+            _web3FormsAccessKey.contains('YOUR_WEB3FORMS_ACCESS_KEY')) {
+          errorMessage =
+              'Web3Forms configuration error. Please configure your Web3Forms access key in the code.';
+        }
+        _showErrorDialog(errorMessage);
       }
     }
+  }
+
+  Future<http.Response> _sendViaFormspree() async {
+    final emailBody = _buildEmailBody();
+
+    // Note: Formspree free tier sends emails to the email address used when creating the form.
+    // The _to field and subject field require a paid plan. Configure these in your Formspree dashboard.
+    return await http
+        .post(
+      Uri.parse(_formspreeEndpoint),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'name': _clientNameController.text,
+        'email': _clientEmailController.text,
+        'phone': _clientPhoneController.text.isNotEmpty
+            ? _clientPhoneController.text
+            : 'Not provided',
+        'company': _clientCompanyController.text.isNotEmpty
+            ? _clientCompanyController.text
+            : 'Not provided',
+        'app_name': _appNameController.text,
+        'app_type': _selectedAppType ?? 'Not specified',
+        'app_description': _appDescriptionController.text,
+        'app_features': _appFeaturesController.text.isNotEmpty
+            ? _appFeaturesController.text
+            : 'Not specified',
+        'target_platforms': _selectedPlatforms.join(', '),
+        'priority': _selectedPriority ?? 'Not specified',
+        'budget': _budgetController.text.isNotEmpty
+            ? _budgetController.text
+            : 'Not specified',
+        'timeline': _timelineController.text.isNotEmpty
+            ? _timelineController.text
+            : 'Not specified',
+        'additional_notes': _additionalNotesController.text.isNotEmpty
+            ? _additionalNotesController.text
+            : 'None',
+        'design_style': _selectedDesignStyle ?? 'Not specified',
+        'design_complexity': _selectedDesignComplexity ?? 'Not specified',
+        'color_scheme': _colorSchemeController.text.isNotEmpty
+            ? _colorSchemeController.text
+            : 'Not specified',
+        'design_inspiration': _designInspirationController.text.isNotEmpty
+            ? _designInspirationController.text
+            : 'Not specified',
+        'brand_guidelines': _brandGuidelinesController.text.isNotEmpty
+            ? _brandGuidelinesController.text
+            : 'Not specified',
+        'message': emailBody,
+        // Removed 'subject' and '_to' fields - these require a paid Formspree plan.
+        // Email recipient is set in Formspree dashboard when creating the form.
+        // Subject can be configured in the Formspree dashboard or email template.
+      }),
+    )
+        .timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        throw Exception(
+            'Request timeout. Please check your internet connection and try again.');
+      },
+    );
+  }
+
+  Future<http.Response> _sendViaWeb3Forms() async {
+    final emailBody = _buildEmailBody();
+
+    return await http
+        .post(
+      Uri.parse('https://api.web3forms.com/submit'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'access_key': _web3FormsAccessKey,
+        'subject': 'New Order Request: ${_appNameController.text}',
+        'from_name': _clientNameController.text,
+        'from_email': _clientEmailController.text,
+        'to_email': _recipientEmail,
+        'name': _clientNameController.text,
+        'email': _clientEmailController.text,
+        'phone': _clientPhoneController.text.isNotEmpty
+            ? _clientPhoneController.text
+            : 'Not provided',
+        'company': _clientCompanyController.text.isNotEmpty
+            ? _clientCompanyController.text
+            : 'Not provided',
+        'app_name': _appNameController.text,
+        'app_type': _selectedAppType ?? 'Not specified',
+        'app_description': _appDescriptionController.text,
+        'app_features': _appFeaturesController.text.isNotEmpty
+            ? _appFeaturesController.text
+            : 'Not specified',
+        'target_platforms': _selectedPlatforms.join(', '),
+        'priority': _selectedPriority ?? 'Not specified',
+        'budget': _budgetController.text.isNotEmpty
+            ? _budgetController.text
+            : 'Not specified',
+        'timeline': _timelineController.text.isNotEmpty
+            ? _timelineController.text
+            : 'Not specified',
+        'additional_notes': _additionalNotesController.text.isNotEmpty
+            ? _additionalNotesController.text
+            : 'None',
+        'design_style': _selectedDesignStyle ?? 'Not specified',
+        'design_complexity': _selectedDesignComplexity ?? 'Not specified',
+        'color_scheme': _colorSchemeController.text.isNotEmpty
+            ? _colorSchemeController.text
+            : 'Not specified',
+        'design_inspiration': _designInspirationController.text.isNotEmpty
+            ? _designInspirationController.text
+            : 'Not specified',
+        'brand_guidelines': _brandGuidelinesController.text.isNotEmpty
+            ? _brandGuidelinesController.text
+            : 'Not specified',
+        'message': emailBody,
+      }),
+    )
+        .timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        throw Exception(
+            'Request timeout. Please check your internet connection and try again.');
+      },
+    );
   }
 
   String _buildEmailBody() {
     final buffer = StringBuffer();
     buffer.writeln('=== NEW ORDER REQUEST ===\n');
-    
+
     buffer.writeln('CLIENT INFORMATION:');
     buffer.writeln('Name: ${_clientNameController.text}');
     buffer.writeln('Email: ${_clientEmailController.text}');
-    buffer.writeln('Phone: ${_clientPhoneController.text.isNotEmpty ? _clientPhoneController.text : "Not provided"}');
-    buffer.writeln('Company: ${_clientCompanyController.text.isNotEmpty ? _clientCompanyController.text : "Not provided"}');
+    buffer.writeln(
+        'Phone: ${_clientPhoneController.text.isNotEmpty ? _clientPhoneController.text : "Not provided"}');
+    buffer.writeln(
+        'Company: ${_clientCompanyController.text.isNotEmpty ? _clientCompanyController.text : "Not provided"}');
     buffer.writeln('');
-    
+
     buffer.writeln('APP DETAILS:');
     buffer.writeln('App Name: ${_appNameController.text}');
     buffer.writeln('App Type: ${_selectedAppType ?? "Not specified"}');
     buffer.writeln('Description: ${_appDescriptionController.text}');
-    buffer.writeln('Features: ${_appFeaturesController.text.isNotEmpty ? _appFeaturesController.text : "Not specified"}');
+    buffer.writeln(
+        'Features: ${_appFeaturesController.text.isNotEmpty ? _appFeaturesController.text : "Not specified"}');
     buffer.writeln('');
-    
+
     buffer.writeln('TARGET PLATFORMS:');
     buffer.writeln(_selectedPlatforms.join(', '));
     buffer.writeln('');
-    
+
     buffer.writeln('PROJECT DETAILS:');
     buffer.writeln('Priority: ${_selectedPriority ?? "Not specified"}');
-    buffer.writeln('Budget: ${_budgetController.text.isNotEmpty ? _budgetController.text : "Not specified"}');
-    buffer.writeln('Timeline: ${_timelineController.text.isNotEmpty ? _timelineController.text : "Not specified"}');
-    buffer.writeln('Additional Notes: ${_additionalNotesController.text.isNotEmpty ? _additionalNotesController.text : "None"}');
+    buffer.writeln(
+        'Budget: ${_budgetController.text.isNotEmpty ? _budgetController.text : "Not specified"}');
+    buffer.writeln(
+        'Timeline: ${_timelineController.text.isNotEmpty ? _timelineController.text : "Not specified"}');
+    buffer.writeln(
+        'Additional Notes: ${_additionalNotesController.text.isNotEmpty ? _additionalNotesController.text : "None"}');
     buffer.writeln('');
-    
+
     buffer.writeln('DESIGN REQUIREMENTS:');
-    buffer.writeln('Style Preference: ${_selectedDesignStyle ?? "Not specified"}');
-    buffer.writeln('Complexity Level: ${_selectedDesignComplexity ?? "Not specified"}');
-    buffer.writeln('Color Scheme: ${_colorSchemeController.text.isNotEmpty ? _colorSchemeController.text : "Not specified"}');
-    buffer.writeln('Design Inspiration: ${_designInspirationController.text.isNotEmpty ? _designInspirationController.text : "Not specified"}');
-    buffer.writeln('Brand Guidelines: ${_brandGuidelinesController.text.isNotEmpty ? _brandGuidelinesController.text : "Not specified"}');
-    
+    buffer.writeln(
+        'Style Preference: ${_selectedDesignStyle ?? "Not specified"}');
+    buffer.writeln(
+        'Complexity Level: ${_selectedDesignComplexity ?? "Not specified"}');
+    buffer.writeln(
+        'Color Scheme: ${_colorSchemeController.text.isNotEmpty ? _colorSchemeController.text : "Not specified"}');
+    buffer.writeln(
+        'Design Inspiration: ${_designInspirationController.text.isNotEmpty ? _designInspirationController.text : "Not specified"}');
+    buffer.writeln(
+        'Brand Guidelines: ${_brandGuidelinesController.text.isNotEmpty ? _brandGuidelinesController.text : "Not specified"}');
+
     return buffer.toString();
+  }
+
+  Future<void> _saveFormData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Save text fields
+      await prefs.setString(
+          '${_storageKeyPrefix}clientName', _clientNameController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}clientEmail', _clientEmailController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}clientPhone', _clientPhoneController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}clientCompany', _clientCompanyController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}appName', _appNameController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}appDescription', _appDescriptionController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}appFeatures', _appFeaturesController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}budget', _budgetController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}timeline', _timelineController.text);
+      await prefs.setString('${_storageKeyPrefix}additionalNotes',
+          _additionalNotesController.text);
+      await prefs.setString(
+          '${_storageKeyPrefix}colorScheme', _colorSchemeController.text);
+      await prefs.setString('${_storageKeyPrefix}designInspiration',
+          _designInspirationController.text);
+      await prefs.setString('${_storageKeyPrefix}brandGuidelines',
+          _brandGuidelinesController.text);
+
+      // Save dropdown values
+      await prefs.setString(
+          '${_storageKeyPrefix}appType', _selectedAppType ?? '');
+      await prefs.setString(
+          '${_storageKeyPrefix}priority', _selectedPriority ?? '');
+      await prefs.setString(
+          '${_storageKeyPrefix}designStyle', _selectedDesignStyle ?? '');
+      await prefs.setString('${_storageKeyPrefix}designComplexity',
+          _selectedDesignComplexity ?? '');
+
+      // Save selected platforms
+      await prefs.setStringList(
+          '${_storageKeyPrefix}platforms', _selectedPlatforms.toList());
+    } catch (e) {
+      // Silently fail - form data saving is not critical
+      debugPrint('Error saving form data: $e');
+    }
+  }
+
+  Future<void> _loadSavedFormData() async {
+    if (_isDataLoaded) return; // Prevent multiple loads
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Load text fields
+      _clientNameController.text =
+          prefs.getString('${_storageKeyPrefix}clientName') ?? '';
+      _clientEmailController.text =
+          prefs.getString('${_storageKeyPrefix}clientEmail') ?? '';
+      _clientPhoneController.text =
+          prefs.getString('${_storageKeyPrefix}clientPhone') ?? '';
+      _clientCompanyController.text =
+          prefs.getString('${_storageKeyPrefix}clientCompany') ?? '';
+      _appNameController.text =
+          prefs.getString('${_storageKeyPrefix}appName') ?? '';
+      _appDescriptionController.text =
+          prefs.getString('${_storageKeyPrefix}appDescription') ?? '';
+      _appFeaturesController.text =
+          prefs.getString('${_storageKeyPrefix}appFeatures') ?? '';
+      _budgetController.text =
+          prefs.getString('${_storageKeyPrefix}budget') ?? '';
+      _timelineController.text =
+          prefs.getString('${_storageKeyPrefix}timeline') ?? '';
+      _additionalNotesController.text =
+          prefs.getString('${_storageKeyPrefix}additionalNotes') ?? '';
+      _colorSchemeController.text =
+          prefs.getString('${_storageKeyPrefix}colorScheme') ?? '';
+      _designInspirationController.text =
+          prefs.getString('${_storageKeyPrefix}designInspiration') ?? '';
+      _brandGuidelinesController.text =
+          prefs.getString('${_storageKeyPrefix}brandGuidelines') ?? '';
+
+      // Load dropdown values
+      final appType = prefs.getString('${_storageKeyPrefix}appType');
+      if (appType != null && appType.isNotEmpty) {
+        _selectedAppType = appType;
+      }
+      final priority = prefs.getString('${_storageKeyPrefix}priority');
+      if (priority != null && priority.isNotEmpty) {
+        _selectedPriority = priority;
+      }
+      final designStyle = prefs.getString('${_storageKeyPrefix}designStyle');
+      if (designStyle != null && designStyle.isNotEmpty) {
+        _selectedDesignStyle = designStyle;
+      }
+      final designComplexity =
+          prefs.getString('${_storageKeyPrefix}designComplexity');
+      if (designComplexity != null && designComplexity.isNotEmpty) {
+        _selectedDesignComplexity = designComplexity;
+      }
+
+      // Load selected platforms
+      final platforms = prefs.getStringList('${_storageKeyPrefix}platforms');
+      if (platforms != null && platforms.isNotEmpty) {
+        _selectedPlatforms = platforms.toSet();
+      }
+
+      _isDataLoaded = true;
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      // Silently fail - form data loading is not critical
+      debugPrint('Error loading form data: $e');
+      _isDataLoaded = true;
+    }
+  }
+
+  Future<void> _clearSavedFormData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Clear all form data keys
+      await prefs.remove('${_storageKeyPrefix}clientName');
+      await prefs.remove('${_storageKeyPrefix}clientEmail');
+      await prefs.remove('${_storageKeyPrefix}clientPhone');
+      await prefs.remove('${_storageKeyPrefix}clientCompany');
+      await prefs.remove('${_storageKeyPrefix}appName');
+      await prefs.remove('${_storageKeyPrefix}appDescription');
+      await prefs.remove('${_storageKeyPrefix}appFeatures');
+      await prefs.remove('${_storageKeyPrefix}budget');
+      await prefs.remove('${_storageKeyPrefix}timeline');
+      await prefs.remove('${_storageKeyPrefix}additionalNotes');
+      await prefs.remove('${_storageKeyPrefix}colorScheme');
+      await prefs.remove('${_storageKeyPrefix}designInspiration');
+      await prefs.remove('${_storageKeyPrefix}brandGuidelines');
+      await prefs.remove('${_storageKeyPrefix}appType');
+      await prefs.remove('${_storageKeyPrefix}priority');
+      await prefs.remove('${_storageKeyPrefix}designStyle');
+      await prefs.remove('${_storageKeyPrefix}designComplexity');
+      await prefs.remove('${_storageKeyPrefix}platforms');
+    } catch (e) {
+      debugPrint('Error clearing form data: $e');
+    }
   }
 
   void _showSuccessDialog() {
@@ -201,6 +558,20 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 _selectedPriority = null;
                 _selectedDesignStyle = null;
                 _selectedDesignComplexity = null;
+                // Clear controllers
+                _clientNameController.clear();
+                _clientEmailController.clear();
+                _clientPhoneController.clear();
+                _clientCompanyController.clear();
+                _appNameController.clear();
+                _appDescriptionController.clear();
+                _appFeaturesController.clear();
+                _budgetController.clear();
+                _timelineController.clear();
+                _additionalNotesController.clear();
+                _colorSchemeController.clear();
+                _designInspirationController.clear();
+                _brandGuidelinesController.clear();
               },
               child: Text(
                 'OK',
@@ -216,6 +587,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
   }
 
   void _showErrorDialog(String message) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -234,11 +606,34 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
               ),
             ],
           ),
-          content: Text(
-            message,
-            style: GoogleFonts.albertSans(
-              color: ColorManager.white,
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message,
+                style: GoogleFonts.albertSans(
+                  color: ColorManager.white,
+                ),
+              ),
+              SizedBox(height: 1.h),
+              Row(
+                children: [
+                  Icon(Icons.info_outline,
+                      color: ColorManager.blue, size: 16.sp),
+                  SizedBox(width: 1.w),
+                  Expanded(
+                    child: Text(
+                      'Your form data has been saved. You can try again without retyping.',
+                      style: GoogleFonts.albertSans(
+                        color: ColorManager.blue.withValues(alpha: 0.9),
+                        fontSize: isMobile ? 9.sp : 4.sp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -506,7 +901,9 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 selectedColor: ColorManager.blue.withValues(alpha: 0.7),
                 checkmarkColor: Colors.white,
                 side: BorderSide(
-                  color: isSelected ? ColorManager.blue : ColorManager.blue.withValues(alpha: 0.5),
+                  color: isSelected
+                      ? ColorManager.blue
+                      : ColorManager.blue.withValues(alpha: 0.5),
                   width: isMobile ? 1.5 : 0.8,
                 ),
                 labelPadding: EdgeInsets.symmetric(
@@ -633,7 +1030,7 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
               ],
             ),
             SizedBox(height: isMobile ? 1.2.h : 1.h),
-            
+
             // Design Style Preference with icons
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
@@ -687,9 +1084,9 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: isMobile ? 1.h : 0.8.h),
-            
+
             // Design Complexity Level
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
@@ -757,9 +1154,9 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: isMobile ? 1.h : 0.8.h),
-            
+
             // Color Scheme
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
@@ -809,7 +1206,8 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
                   _buildTextField(
                     label: '',
-                    hint: 'Describe your preferred color palette or brand colors',
+                    hint:
+                        'Describe your preferred color palette or brand colors',
                     controller: _colorSchemeController,
                     maxLines: 2,
                     isRequired: false,
@@ -818,9 +1216,9 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: isMobile ? 1.h : 0.8.h),
-            
+
             // Design Inspiration
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
@@ -870,7 +1268,8 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
                   _buildTextField(
                     label: '',
-                    hint: 'Links to apps or websites you like, or describe your vision',
+                    hint:
+                        'Links to apps or websites you like, or describe your vision',
                     controller: _designInspirationController,
                     maxLines: 3,
                     isRequired: false,
@@ -879,9 +1278,9 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: isMobile ? 1.h : 0.8.h),
-            
+
             // Brand Guidelines
             Container(
               padding: EdgeInsets.all(isMobile ? 1.h : 1.h),
@@ -931,7 +1330,8 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
                   SizedBox(height: isMobile ? 0.8.h : 0.6.h),
                   _buildTextField(
                     label: '',
-                    hint: 'Do you have a logo, brand guidelines, or design assets?',
+                    hint:
+                        'Do you have a logo, brand guidelines, or design assets?',
                     controller: _brandGuidelinesController,
                     maxLines: 3,
                     isRequired: false,
@@ -978,245 +1378,251 @@ class _OrderHereScreenState extends State<OrderHereScreen> {
               ),
               child: CustomScrollView(
                 slivers: [
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Client Information
-                      _buildSection(
-                        title: 'Client Information',
-                        children: [
-                          _buildTextField(
-                            label: 'Full Name *',
-                            hint: 'Enter your full name',
-                            controller: _clientNameController,
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Email *',
-                            hint: 'your.email@example.com',
-                            controller: _clientEmailController,
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Phone Number',
-                            hint: '+1 (555) 123-4567',
-                            controller: _clientPhoneController,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Company/Organization',
-                            hint: 'Your company name (optional)',
-                            controller: _clientCompanyController,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
-                        ],
-                        isMobile: isMobile,
-                      ),
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Client Information
+                        _buildSection(
+                          title: 'Client Information',
+                          children: [
+                            _buildTextField(
+                              label: 'Full Name *',
+                              hint: 'Enter your full name',
+                              controller: _clientNameController,
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'Email *',
+                              hint: 'your.email@example.com',
+                              controller: _clientEmailController,
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'Phone Number',
+                              hint: '+1 (555) 123-4567',
+                              controller: _clientPhoneController,
+                              isRequired: false,
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'Company/Organization',
+                              hint: 'Your company name (optional)',
+                              controller: _clientCompanyController,
+                              isRequired: false,
+                              isMobile: isMobile,
+                            ),
+                          ],
+                          isMobile: isMobile,
+                        ),
 
-                      // App Details
-                      _buildSection(
-                        title: 'App Details',
-                        icon: Icons.apps,
-                        children: [
-                          _buildTextField(
-                            label: 'App Name *',
-                            hint: 'Enter your app name',
-                            controller: _appNameController,
-                            isMobile: isMobile,
-                          ),
-                          _buildDropdown(
-                            label: 'App Type *',
-                            items: [
-                              'Mobile App',
-                              'Web App',
-                              'Desktop App',
-                              'Cross-Platform App',
-                              'Progressive Web App (PWA)',
-                              'Other',
-                            ],
-                            value: _selectedAppType,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedAppType = value;
-                              });
-                            },
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'App Description *',
-                            hint: 'Describe what your app does',
-                            controller: _appDescriptionController,
-                            maxLines: 4,
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Key Features',
-                            hint: 'List main features (e.g., User authentication, Payment processing, etc.)',
-                            controller: _appFeaturesController,
-                            maxLines: 4,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
-                        ],
-                        isMobile: isMobile,
-                      ),
+                        // App Details
+                        _buildSection(
+                          title: 'App Details',
+                          icon: Icons.apps,
+                          children: [
+                            _buildTextField(
+                              label: 'App Name *',
+                              hint: 'Enter your app name',
+                              controller: _appNameController,
+                              isMobile: isMobile,
+                            ),
+                            _buildDropdown(
+                              label: 'App Type *',
+                              items: [
+                                'Mobile App',
+                                'Web App',
+                                'Desktop App',
+                                'Cross-Platform App',
+                                'Progressive Web App (PWA)',
+                                'Other',
+                              ],
+                              value: _selectedAppType,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedAppType = value;
+                                });
+                              },
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'App Description *',
+                              hint: 'Describe what your app does',
+                              controller: _appDescriptionController,
+                              maxLines: 4,
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'Key Features',
+                              hint:
+                                  'List main features (e.g., User authentication, Payment processing, etc.)',
+                              controller: _appFeaturesController,
+                              maxLines: 4,
+                              isRequired: false,
+                              isMobile: isMobile,
+                            ),
+                          ],
+                          isMobile: isMobile,
+                        ),
 
-                      // Target Platforms
-                      _buildSection(
-                        title: 'Target Platforms',
-                        icon: Icons.devices,
-                        children: [
-                          _buildPlatformCheckboxes(),
-                        ],
-                        isMobile: isMobile,
-                      ),
+                        // Target Platforms
+                        _buildSection(
+                          title: 'Target Platforms',
+                          icon: Icons.devices,
+                          children: [
+                            _buildPlatformCheckboxes(),
+                          ],
+                          isMobile: isMobile,
+                        ),
 
-                      // Project Details
-                      _buildSection(
-                        title: 'Project Details',
-                        icon: Icons.assignment,
-                        children: [
-                          _buildDropdown(
-                            label: 'Project Priority *',
-                            items: [
-                              'Low',
-                              'Medium',
-                              'High',
-                              'Urgent',
-                            ],
-                            value: _selectedPriority,
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedPriority = value;
-                              });
-                            },
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Budget Range',
-                            hint: r'e.g., $5,000 - $10,000 or Flexible',
-                            controller: _budgetController,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Timeline',
-                            hint: 'e.g., 3 months, ASAP, Flexible',
-                            controller: _timelineController,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
-                          _buildTextField(
-                            label: 'Additional Notes',
-                            hint: 'Any other information you\'d like to share',
-                            controller: _additionalNotesController,
-                            maxLines: 4,
-                            isRequired: false,
-                            isMobile: isMobile,
-                          ),
-                        ],
-                        isMobile: isMobile,
-                      ),
+                        // Project Details
+                        _buildSection(
+                          title: 'Project Details',
+                          icon: Icons.assignment,
+                          children: [
+                            _buildDropdown(
+                              label: 'Project Priority *',
+                              items: [
+                                'Low',
+                                'Medium',
+                                'High',
+                                'Urgent',
+                              ],
+                              value: _selectedPriority,
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedPriority = value;
+                                });
+                              },
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'Budget Range',
+                              hint: r'e.g., $5,000 - $10,000 or Flexible',
+                              controller: _budgetController,
+                              isRequired: false,
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'Timeline',
+                              hint: 'e.g., 3 months, ASAP, Flexible',
+                              controller: _timelineController,
+                              isRequired: false,
+                              isMobile: isMobile,
+                            ),
+                            _buildTextField(
+                              label: 'Additional Notes',
+                              hint:
+                                  'Any other information you\'d like to share',
+                              controller: _additionalNotesController,
+                              maxLines: 4,
+                              isRequired: false,
+                              isMobile: isMobile,
+                            ),
+                          ],
+                          isMobile: isMobile,
+                        ),
 
-                      // Design Requirements
-                      _buildFancyDesignSection(isMobile),
+                        // Design Requirements
+                        _buildFancyDesignSection(isMobile),
 
-                      SizedBox(height: 3.h),
+                        SizedBox(height: 3.h),
 
-                      // Submit Button
-                      Center(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                ColorManager.blue,
-                                ColorManager.blue.withValues(alpha: 0.8),
+                        // Submit Button
+                        Center(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  ColorManager.blue,
+                                  ColorManager.blue.withValues(alpha: 0.8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      ColorManager.blue.withValues(alpha: 0.4),
+                                  blurRadius: 15,
+                                  spreadRadius: 2,
+                                  offset: Offset(0, 4),
+                                ),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: ColorManager.blue.withValues(alpha: 0.4),
-                                blurRadius: 15,
-                                spreadRadius: 2,
-                                offset: Offset(0, 4),
+                            child: ElevatedButton(
+                              onPressed: _isSubmitting ? null : _submitForm,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isMobile ? 8.w : 6.w,
+                                  vertical: isMobile ? 2.h : 1.5.h,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                disabledBackgroundColor: Colors.transparent,
                               ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submitForm,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isMobile ? 8.w : 6.w,
-                                vertical: isMobile ? 2.h : 1.5.h,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              disabledBackgroundColor: Colors.transparent,
+                              child: _isSubmitting
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: isMobile ? 16.sp : 14.sp,
+                                          height: isMobile ? 16.sp : 14.sp,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
+                                          ),
+                                        ),
+                                        SizedBox(width: 2.w),
+                                        Text(
+                                          'Submitting...',
+                                          style: GoogleFonts.albertSans(
+                                            color: Colors.white,
+                                            fontSize: isMobile ? 14.sp : 7.sp,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.send,
+                                          color: Colors.white,
+                                          size: isMobile ? 16.sp : 14.sp,
+                                        ),
+                                        SizedBox(width: 1.w),
+                                        Text(
+                                          'Submit Order',
+                                          style: GoogleFonts.albertSans(
+                                            color: Colors.white,
+                                            fontSize: isMobile ? 14.sp : 7.sp,
+                                            fontWeight: FontWeight.bold,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.3),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                             ),
-                            child: _isSubmitting
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: isMobile ? 16.sp : 14.sp,
-                                        height: isMobile ? 16.sp : 14.sp,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                        ),
-                                      ),
-                                      SizedBox(width: 2.w),
-                                      Text(
-                                        'Submitting...',
-                                        style: GoogleFonts.albertSans(
-                                          color: Colors.white,
-                                          fontSize: isMobile ? 14.sp : 7.sp,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.send,
-                                        color: Colors.white,
-                                        size: isMobile ? 16.sp : 14.sp,
-                                      ),
-                                      SizedBox(width: 1.w),
-                                      Text(
-                                        'Submit Order',
-                                        style: GoogleFonts.albertSans(
-                                          color: Colors.white,
-                                          fontSize: isMobile ? 14.sp : 7.sp,
-                                          fontWeight: FontWeight.bold,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black.withValues(alpha: 0.3),
-                                              blurRadius: 4,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                           ),
                         ),
-                      ),
 
-                      SizedBox(height: 3.h),
-                    ],
+                        SizedBox(height: 3.h),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
               ),
             ),
           ),
